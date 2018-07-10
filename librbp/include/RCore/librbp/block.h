@@ -13,9 +13,11 @@ extern "C"
 #include <stddef.h>
 #include <stdint.h>
 
+#define LRT_LIBRBP_BLOCK_START_BIT 0b10000000
+
 #ifdef LRT_RCORE_DEBUG
 #define LRT_LIBRBP_BLOCK_STRUCT_DEBUG_MEMBERS(sPREFIX, iBLOCK_SIZE) \
-  char out_str[iBLOCK_SIZE * 8 + 1 + 8];
+  char out_str[(iBLOCK_SIZE / 8) * (iBLOCK_SIZE * 8 + 1 + 8)];
 #define LRT_LIBRBP_BLOCK_STRUCT_DEBUG_FUNCTIONS(sPREFIX, iBLOCK_SIZE) \
   const char* sPREFIX##_to_str(sPREFIX##_block_t* block)              \
   {                                                                   \

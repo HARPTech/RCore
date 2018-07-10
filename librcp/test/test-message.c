@@ -6,21 +6,23 @@
 #include <RCore/librbp/block.h>
 #include <RCore/librsp/stream_message.h>
 
-LRT_LIBRBP_BLOCK_STRUCT(test, 8, LRT_LIBRSP_STREAM_MESSAGE)
+LRT_LIBRBP_BLOCK_STRUCT(test, 64, LRT_LIBRSP_STREAM_MESSAGE)
 
 // Types
 LRT_LIBRCP_TYPES(test)
 
 // Test Helper
-#define SET_GET_CHECK_DATA_HELPER_ASSERT(                          \
-  sPREFIX, sTYPENAME, tTYPE, oBLOCK, VALUE, ASSERT)                \
-  {                                                                \
-    tTYPE data = 0;                                                \
-    for(size_t i = -1, j = -1; i != 0 && j != 0;) {                \
-      i = sPREFIX##_set_data_##sTYPENAME(&oBLOCK, VALUE, i);       \
-      j = sPREFIX##_get_data_##sTYPENAME(&oBLOCK, &data, j);       \
-    }                                                              \
-    ASSERT(data, VALUE);                                           \
+#define SET_GET_CHECK_DATA_HELPER_ASSERT(                    \
+  sPREFIX, sTYPENAME, tTYPE, oBLOCK, VALUE, ASSERT)          \
+  {                                                          \
+    tTYPE data = 0;                                          \
+    for(size_t i = -1, j = -1; i != 0 && j != 0;) {          \
+      i = sPREFIX##_set_data_##sTYPENAME(&oBLOCK, VALUE, i); \
+      cr_log_info("Block: %s", sPREFIX##_to_str(block));     \
+      j = sPREFIX##_get_data_##sTYPENAME(&oBLOCK, &data, j); \
+    }                                                        \
+    cr_log_info("Check");                                    \
+    ASSERT(data, VALUE);                                     \
   }
 
 #define NORMAL_ASSERT(ACTUAL, EXPECTED) cr_assert_eq(ACTUAL, EXPECTED)
@@ -84,6 +86,20 @@ Test(message, types)
 {
   test_block_t block;
   test_init(&block);
+
+  // Test message types.
+  test_set_litecomm_message_type(&block, LRT_RCP_MESSAGE_TYPE_UPDATE);
+  cr_assert_eq(test_get_litecomm_message_type(&block),
+               LRT_RCP_MESSAGE_TYPE_UPDATE);
+  test_set_litecomm_message_type(&block, LRT_RCP_MESSAGE_TYPE_SUBSCRIBE);
+  cr_assert_eq(test_get_litecomm_message_type(&block),
+               LRT_RCP_MESSAGE_TYPE_SUBSCRIBE);
+  test_set_litecomm_message_type(&block, LRT_RCP_MESSAGE_TYPE_UNSUBSCRIBE);
+  cr_assert_eq(test_get_litecomm_message_type(&block),
+               LRT_RCP_MESSAGE_TYPE_UNSUBSCRIBE);
+  test_set_litecomm_message_type(&block, LRT_RCP_MESSAGE_TYPE_REQUEST);
+  cr_assert_eq(test_get_litecomm_message_type(&block),
+               LRT_RCP_MESSAGE_TYPE_REQUEST);
 
   // Unreliable Packets.
   test_set_reliable(&block, false);

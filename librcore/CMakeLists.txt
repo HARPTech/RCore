@@ -13,3 +13,9 @@ target_include_directories(rcore
     )
 
 target_link_libraries(rcore rbp)
+
+# Tests
+if(BUILD_TESTS)
+    add_executable(rcore-test-rcomm ${CMAKE_CURRENT_SOURCE_DIR}/test/test-rcomm.c)
+    target_link_libraries(rcore-test-rcomm Criterion rcore)
+endif()

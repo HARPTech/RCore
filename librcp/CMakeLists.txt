@@ -5,6 +5,8 @@ set(LIBRCP_SRCS
 add_library(rcp STATIC
     ${LIBRCP_SRCS})
 
+set_property(TARGET rcp PROPERTY C_STANDARD 11)
+
 target_include_directories(rcp
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include

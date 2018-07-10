@@ -41,6 +41,7 @@ extern "C"
   typedef struct sPREFIX##_block_t                                            \
   {                                                                           \
     uint8_t data[iBLOCK_SIZE];                                                \
+    size_t size;                                                              \
     LRT_LIBRBP_BLOCK_STRUCT_DEBUG_MEMBERS(sPREFIX, iBLOCK_SIZE)               \
   } sPREFIX##_block_t;                                                        \
                                                                               \
@@ -49,6 +50,7 @@ extern "C"
     for(size_t i = 0; i < iBLOCK_SIZE; ++i) {                                 \
       block->data[i] = (i == 0) ? 0b10000000 : 0;                             \
     }                                                                         \
+    block->size = iBLOCK_SIZE;                                                \
   }                                                                           \
   uint8_t sPREFIX##_get_block_data(sPREFIX##_block_t* block, size_t pos)      \
   {                                                                           \
@@ -66,24 +68,11 @@ extern "C"
     block->data[pos] = (block->data[pos] & (0xFF << (8 - ((pos % 7) + 1)))) | \
                        (val >> ((pos % 7) + 1));                              \
     block->data[pos + 1] =                                                    \
-      (block->data[pos + 1] & (0xFF >> ((pos % 7) + 1))) |                    \
+      (block->data[pos + 1] & (0xFF >> ((pos % 7) + 2))) |                    \
       ((val << (7 - ((pos % 7) + 1))) & 0b01111111);                          \
   }                                                                           \
-  void sPREFIX##_get_block_bit(sPREFIX##_block_t* block, size_t bit)          \
-  {                                                                           \
-    assert(bit * 8 < iBLOCK_SIZE - 1);                                        \
-    return sPREFIX##_get_block_data(block, bit / 8) & 1 << 8 - (bit % 8);     \
-  }                                                                           \
-  void sPREFIX##_set_block_bit(sPREFIX##_block_t* block, size_t bit, bool val) \
-  {                                                                           \
-    sPREFIX##_set_block_data(                                                 \
-      block,                                                                  \
-      bit / 8,                                                                      \
-      (sPREFIX##_get_block_data(block, 0) & (~(8 - (bit % 8)))) | ack ? 0b10000000 \
-                                                              : 0);           \
-  }
-  INTERNAL(sPREFIX, iBLOCK_SIZE)
-  LRT_LIBRSP_STREAM_MESSAGE(sPREFIX, (iBLOCK_SIZE - 1))
+  LRT_LIBRBP_BLOCK_STRUCT_DEBUG_FUNCTIONS(sPREFIX, iBLOCK_SIZE)               \
+  INTERNAL(sPREFIX, (iBLOCK_SIZE - 1))
 
 #ifdef __cplusplus
 }// closing brace for extern "C"

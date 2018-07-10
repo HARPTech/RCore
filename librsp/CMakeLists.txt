@@ -5,9 +5,17 @@ set(LIBRSP_SRCS
 add_library(rsp STATIC
     ${LIBRSP_SRCS})
 
+set_property(TARGET rsp PROPERTY C_STANDARD 11)
+
 target_include_directories(rsp
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
 
 target_link_libraries(rsp rcp)
+
+# Tests
+if(BUILD_TESTS)
+    add_executable(rsp-test-stream-message ${CMAKE_CURRENT_SOURCE_DIR}/test/test-stream-message.c)
+    target_link_libraries(rsp-test-stream-message Criterion rsp rbp)
+endif()

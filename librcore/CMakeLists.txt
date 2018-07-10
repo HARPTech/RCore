@@ -5,6 +5,8 @@ set(LIBRCORE_SRCS
 add_library(rcore STATIC
     ${LIBRCORE_SRCS})
 
+set_property(TARGET rcore PROPERTY C_STANDARD 11)
+
 target_include_directories(rcore
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include

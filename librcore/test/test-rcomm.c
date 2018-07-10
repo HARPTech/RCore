@@ -4,7 +4,6 @@
 #include <criterion/criterion.h>
 #include <criterion/logging.h>
 
-LRT_RCORE_RCOMM_DEFINE_PROTOCOL(test, 8, LRT_LIBRSP_STREAM_MESSAGE)
+LRT_RCORE_RCOMM_DEFINE_PROTOCOL(test, 8, LRT_LIBRSP_STREAM_MESSAGE, 3, 8)
 
-Test(block, set_data) {
-}
+Test(block, set_data) {}

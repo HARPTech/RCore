@@ -18,6 +18,11 @@ extern "C"
 
 #include <assert.h>
 
+  /* @file
+   * This file is the main interface generator for a RCore communication stack.
+   * Use it as it is used in the test code.
+   */
+
 #define LRT_RCORE_RCOMM_DEFINE_PROTOCOL(                                       \
   sPREFIX, iBLOCK_SIZE, tMESSAGE, iSTACK_WIDTH, iSTACK_DEPTH, iACK_STACK_SIZE) \
   LRT_LIBRBP_BLOCK_STRUCT(sPREFIX, iBLOCK_SIZE, tMESSAGE)                      \

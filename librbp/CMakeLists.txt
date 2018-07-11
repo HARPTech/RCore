@@ -18,4 +18,7 @@ target_link_libraries(rbp rsp)
 if(BUILD_TESTS)
     add_executable(rbp-test-block ${CMAKE_CURRENT_SOURCE_DIR}/test/test-block.c)
     target_link_libraries(rbp-test-block Criterion rbp)
+    add_test(
+	NAME rbp-test-block
+	COMMAND rbp-test-block)
 endif()

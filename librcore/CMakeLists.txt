@@ -18,4 +18,7 @@ target_link_libraries(rcore rbp)
 if(BUILD_TESTS)
     add_executable(rcore-test-rcomm ${CMAKE_CURRENT_SOURCE_DIR}/test/test-rcomm.c)
     target_link_libraries(rcore-test-rcomm Criterion rcore)
+    add_test(
+	NAME rcore-test-rcomm
+	COMMAND rcore-test-rcomm)
 endif()

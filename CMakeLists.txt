@@ -11,7 +11,7 @@ TEST_BIG_ENDIAN(BIG_ENDIAN)
 
 add_subdirectory(third_party)
 if(BUILD_TESTS)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/Criterion/include)
+    enable_testing()
 endif()
 
 add_subdirectory(librbp)

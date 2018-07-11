@@ -19,4 +19,7 @@ target_link_libraries(rsp rcp)
 if(BUILD_TESTS)
     add_executable(rsp-test-stream-message ${CMAKE_CURRENT_SOURCE_DIR}/test/test-stream-message.c)
     target_link_libraries(rsp-test-stream-message Criterion rsp rbp)
+    add_test(
+	NAME rsp-test-stream-message
+	COMMAND rsp-test-stream-message)
 endif()

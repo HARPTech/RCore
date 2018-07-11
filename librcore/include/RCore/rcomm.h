@@ -29,6 +29,7 @@ extern "C"
   {                                                                            \
     sPREFIX##_block_t block;                                                   \
     uint8_t sequence_number_counter;                                           \
+    uint8_t receiving_sequence_number_counter;                                 \
     size_t byte_counter;                                                       \
     sPREFIX##_sequence_stack_t sequence_stack;                                 \
     sPREFIX##_ack_stack_t ack_stack;                                           \
@@ -47,6 +48,7 @@ extern "C"
     handle->accept_userdata = NULL;                                            \
     handle->byte_counter = 0;                                                  \
     handle->sequence_number_counter = 0;                                       \
+    handle->receiving_sequence_number_counter = 0;                             \
   }                                                                            \
   void sPREFIX##_set_transmit_cb(                                              \
     sPREFIX##_handle_t* handle, sPREFIX##_transmit_data_cb cb, void* userdata) \

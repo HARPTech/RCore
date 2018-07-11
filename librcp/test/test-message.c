@@ -39,8 +39,18 @@ LRT_LIBRCP_TYPES(test)
     sPREFIX, sTYPENAME, tTYPE, oBLOCK, VALUE, FLOAT_ASSERT)
 
 void
+test_litecomm_sequence_numbers(test_block_t* block)
+{
+  for(size_t i = 0; i < 0b00111111u; ++i) {
+    test_set_litecomm_sequence_number(block, i);
+    cr_assert_eq(test_get_litecomm_sequence_number(block), i);
+  }
+}
+
+void
 test_set_data_types_simple(test_block_t* block)
 {
+  test_litecomm_sequence_numbers(block);
   SET_GET_CHECK_DATA_HELPER(test, Int8, int8_t, *block, 10);
   SET_GET_CHECK_DATA_HELPER(test, Uint8, uint8_t, *block, 42);
 
@@ -48,6 +58,7 @@ test_set_data_types_simple(test_block_t* block)
   SET_GET_CHECK_DATA_HELPER(test, Int16, int16_t, *block, 0x0FFF);
 
   SET_GET_CHECK_DATA_HELPER(test, Bool, bool, *block, true);
+  test_litecomm_sequence_numbers(block);
   SET_GET_CHECK_DATA_HELPER(test, Bool, bool, *block, false);
 
   SET_GET_CHECK_DATA_HELPER(test, Uint16, uint16_t, *block, 0x0FFF);
@@ -66,6 +77,8 @@ test_set_data_types_complex(test_block_t* block)
   SET_GET_CHECK_DATA_HELPER(test, Uint64, uint64_t, *block, 0xFFF0FFF0FFF0FFF0);
   SET_GET_CHECK_DATA_HELPER(test, Uint64, uint64_t, *block, 0x000F00F0FFF0FFA0);
 
+  test_litecomm_sequence_numbers(block);
+
   SET_GET_CHECK_DATA_HELPER(test, Int64, int64_t, *block, 0x000F00F0FFF0FFA0);
   SET_GET_CHECK_DATA_HELPER(test, Int64, int64_t, *block, 12314134421321332);
   SET_GET_CHECK_DATA_HELPER(test, Int64, int64_t, *block, -12314134421321332);
@@ -76,6 +89,7 @@ test_set_data_types_complex(test_block_t* block)
   SET_GET_CHECK_DATA_HELPER_FLOAT(test, Float, float, *block, 100.131);
   SET_GET_CHECK_DATA_HELPER_FLOAT(test, Float, float, *block, -100.0);
   SET_GET_CHECK_DATA_HELPER_FLOAT(test, Float, float, *block, 124141.131);
+  test_litecomm_sequence_numbers(block);
 
   SET_GET_CHECK_DATA_HELPER_FLOAT(test, Double, double, *block, 100.0);
   SET_GET_CHECK_DATA_HELPER_FLOAT(test, Double, double, *block, 100.131);
@@ -88,8 +102,8 @@ test_set_data_types_complex(test_block_t* block)
 void
 test_set_data_types(test_block_t* block)
 {
-    test_set_data_types_simple(block);
-    test_set_data_types_complex(block);
+  test_set_data_types_simple(block);
+  test_set_data_types_complex(block);
 }
 
 Test(message, types)

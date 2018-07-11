@@ -5,7 +5,8 @@ set(LIBRSP_SRCS
 add_library(rsp STATIC
     ${LIBRSP_SRCS})
 
-set_property(TARGET rsp PROPERTY C_STANDARD 11)
+set_property(TARGET rsp
+    PROPERTY C_STANDARD 11)
 
 target_include_directories(rsp
     PUBLIC

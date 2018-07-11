@@ -6,7 +6,7 @@
 
 #define NOOP(x, y)
 
-LRT_LIBRBP_BLOCK_STRUCT(test, 8, NOOP)
+LRT_LIBRBP_BLOCK_STRUCT(test, 8U, NOOP)
 
 Test(block, set_data)
 {
@@ -34,15 +34,17 @@ Test(block, alternating)
 
   // Brute-Force Testing
   for(size_t i = 0; i < 8 - 1; ++i) {
-    if(i % 2 == 0)
+    if(i % 2 == 0) {
       test_set_block_data(&block, i, 0x0F);
-    else
+    } else {
       test_set_block_data(&block, i, 0xF0);
+    }
   }
   for(size_t i = 0; i < 8 - 1; ++i) {
-    if(i % 2 == 0)
+    if(i % 2 == 0) {
       cr_assert(test_get_block_data(&block, i) == 0x0F);
-    else
+    } else {
       cr_assert(test_get_block_data(&block, i) == 0xF0);
+    }
   }
 }

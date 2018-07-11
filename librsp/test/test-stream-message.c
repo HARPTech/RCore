@@ -4,7 +4,7 @@
 #define LRT_RCORE_DEBUG
 #include <RCore/librbp/block.h>
 
-LRT_LIBRBP_BLOCK_STRUCT(test, 8, LRT_LIBRSP_STREAM_MESSAGE)
+LRT_LIBRBP_BLOCK_STRUCT(test, 8u, LRT_LIBRSP_STREAM_MESSAGE)
 
 void
 test_litecomm(test_block_t* block);
@@ -13,33 +13,37 @@ void
 test_data_various_contents(test_block_t* block)
 {
   for(size_t i = 0; i < test_get_data_size(block); ++i) {
-    if(i % 2 == 0)
+    if(i % 2 == 0) {
       test_set_data(block, i, 0xF0);
-    else
+    } else {
       test_set_data(block, i, 0x0F);
+    }
   }
 
   // Inserting some litecomm changes should do no harm.
   test_litecomm(block);
 
   for(size_t i = 0; i < test_get_data_size(block); ++i) {
-    if(i % 2 == 0)
+    if(i % 2 == 0) {
       cr_assert_eq(test_get_data(block, i), 0xF0);
-    else
+    } else {
       cr_assert_eq(test_get_data(block, i), 0x0F);
+    }
   }
 
   for(size_t i = 0; i < test_get_data_size(block); ++i) {
-    if(i % 2 == 0)
+    if(i % 2 == 0) {
       test_set_data(block, i, 0x0F);
-    else
+    } else {
       test_set_data(block, i, 0xF0);
+    }
   }
   for(size_t i = 0; i < test_get_data_size(block); ++i) {
-    if(i % 2 == 0)
+    if(i % 2 == 0) {
       cr_assert_eq(test_get_data(block, i), 0x0F);
-    else
+    } else {
       cr_assert_eq(test_get_data(block, i), 0xF0);
+    }
   }
 
   test_litecomm(block);

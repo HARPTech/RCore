@@ -82,13 +82,13 @@ extern "C"
     sPREFIX##_block_t* block)                                           \
   {                                                                     \
     return (lrt_rcp_message_type_t)(sPREFIX##_get_data(block, 0) &      \
-                                    0b11000000);                        \
+                                    0b11000000u);                       \
   }                                                                     \
   void sPREFIX##_set_litecomm_message_type(sPREFIX##_block_t* block,    \
                                            lrt_rcp_message_type_t type) \
   {                                                                     \
     sPREFIX##_set_data(                                                 \
-      block, 0, (sPREFIX##_get_data(block, 0) & 0b00111111) | type);    \
+      block, 0, (sPREFIX##_get_data(block, 0) & 0b00111111u) | type);   \
   }
 
 #ifdef __cplusplus

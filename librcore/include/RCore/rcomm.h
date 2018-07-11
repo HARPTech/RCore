@@ -38,6 +38,7 @@ extern "C"
       (handle->accept)(&handle->block, handle->accept_userdata);              \
     } else {                                                                  \
     }                                                                         \
+    return LRT_RCORE_OK;                                                      \
   }                                                                           \
   lrt_rcore_event_t sPREFIX##_parse_bytes(                                    \
     sPREFIX##_handle_t* handle, const uint8_t* data, size_t length)           \

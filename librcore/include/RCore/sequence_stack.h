@@ -14,8 +14,7 @@ extern "C"
       uint8_t liteCommType;                                           \
       uint16_t liteCommProperty;                                      \
       sPREFIX##_block_t blocks[iSTACK_DEPTH];                         \
-    };                                                                \
-    struct entry_t entries[iSTACK_WIDTH];                             \
+    } entries[iSTACK_WIDTH];                                          \
   } sPREFIX##_sequence_stack_t;
 
 #ifdef __cplusplus

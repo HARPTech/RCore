@@ -470,3 +470,71 @@ Test(rcore, big_reliable_mixed, .init = setup, .fini = teardown)
 
   cr_assert_eq(comm_ack_stack_count_pending(&source.ack_stack), 0);
 }
+
+Test(rcore,
+     big_reliable_mixed_counter_wrapping,
+     .init = setup,
+     .fini = teardown)
+{
+  comm_block_t block;
+  comm_block_t blocks[4];
+  size_t indices[4] = { 0, 1, 3, 2 };
+  comm_init_block(&block);
+  for(size_t i = 0; i < 4; ++i) {
+    comm_init_block(&blocks[i]);
+  }
+
+  comm_set_ack(&block, false);
+  comm_set_sStart(&block, true);
+  comm_set_sEnd(&block, false);
+  comm_set_reliable(&block, true);
+
+  cr_assert(!comm_is_tinyPacket(&block));
+
+  // Set the contents: LiteCommType 3, LiteCommProperty: 11, Int64: 1234141413
+  comm_set_litecomm_type(&block, 3);
+  comm_set_litecomm_property(&block, 11);
+  acceptor_userdata.liteCommType = 3;
+  acceptor_userdata.liteCommProperty = 11;
+  acceptor_userdata.int64_data_check = 1234141413;
+  acceptor_userdata.whatToCheck = 3;
+  acceptor_userdata.messageType = LRT_RCP_MESSAGE_TYPE_UPDATE;
+  comm_set_litecomm_message_type(&block, LRT_RCP_MESSAGE_TYPE_UPDATE);
+  int16_t counter = -1;
+
+  cr_assert_eq(comm_ack_stack_count_pending(&source.ack_stack), 0);
+
+  size_t i = 0;
+
+  while(counter != 0) {
+    if(counter == -1) {
+      comm_set_sStart(&block, true);
+    } else {
+      comm_set_sStart(&block, false);
+    }
+    counter = comm_set_data_Int64(&block, 1234141413, counter);
+    if(counter == 0) {
+      comm_set_sEnd(&block, true);
+    } else {
+      comm_set_sEnd(&block, false);
+    }
+    cr_log_warn("Save Test Block for later transit. Data: %s",
+                comm_to_str(&block));
+
+    memcpy(blocks[indices[i]].data, block.data, iBLOCKSIZE);
+    ++i;
+  }
+
+  // Transit in reversed order.
+  for(size_t i = 0; i < 4; ++i) {
+    // Do the sending manually to circumvent automatic sequence number
+    // assignments.
+    comm_set_sequence_number(&blocks[i], (indices[i] + 62) & 0b00111111u);
+    comm_set_next_sequence_number(&blocks[i],
+                                  (indices[i] + 1 + 62) & 0b00111111u);
+    comm_ack_stack_insert(&source.ack_stack, &blocks[i]);
+    source.transmit(blocks[i].data, source.transmit_userdata, iBLOCKSIZE);
+  }
+
+  cr_assert_eq(comm_ack_stack_count_pending(&source.ack_stack), 0);
+}

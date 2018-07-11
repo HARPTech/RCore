@@ -28,6 +28,7 @@ extern "C"
   typedef struct sPREFIX##_handle_t                                            \
   {                                                                            \
     sPREFIX##_block_t block;                                                   \
+    uint8_t sequence_number_counter;                                           \
     size_t byte_counter;                                                       \
     sPREFIX##_sequence_stack_t sequence_stack;                                 \
     sPREFIX##_ack_stack_t ack_stack;                                           \
@@ -45,6 +46,7 @@ extern "C"
     handle->transmit_userdata = NULL;                                          \
     handle->accept_userdata = NULL;                                            \
     handle->byte_counter = 0;                                                  \
+    handle->sequence_number_counter = 0;                                       \
   }                                                                            \
   void sPREFIX##_set_transmit_cb(                                              \
     sPREFIX##_handle_t* handle, sPREFIX##_transmit_data_cb cb, void* userdata) \
@@ -71,6 +73,15 @@ extern "C"
     assert(handle->transmit != NULL);                                          \
     lrt_rcore_event_t status = LRT_RCORE_OK;                                   \
     if(sPREFIX##_is_reliable(block)) {                                         \
+      sPREFIX##_set_sequence_number(block, handle->sequence_number_counter);   \
+      sPREFIX##_set_next_sequence_number(block,                                \
+                                         handle->sequence_number_counter + 1); \
+      ++handle->sequence_number_counter;                                       \
+      if(handle->sequence_number_counter == 0b01000000u) {                     \
+        /* The next sequence number will be 0 again, like wrapping the binary  \
+         * digits at 6. */                                                     \
+        handle->sequence_number_counter = 0b00000000u;                         \
+      }                                                                        \
       status = sPREFIX##_ack_stack_insert(&handle->ack_stack, block);          \
       if(status != LRT_RCORE_OK) {                                             \
         return status;                                                         \
@@ -86,6 +97,7 @@ extern "C"
     sPREFIX##_handle_t* handle)                                                \
   {                                                                            \
     assert(handle->accept != NULL);                                            \
+    lrt_rcore_event_t status = LRT_RCORE_OK;                                   \
     /* Blocks have to be handled according to the configuration of this RComm  \
      * stack. They are handled over the sequence stack. */                     \
     if(sPREFIX##_is_ack(&handle->block)) {                                     \
@@ -95,24 +107,40 @@ extern "C"
     }                                                                          \
     if(sPREFIX##_is_tinyPacket(&handle->block)) {                              \
       /* Can be directly given to the acceptor. */                             \
-      handle->accept(&handle->block, handle->accept_userdata);                 \
+      if(status == LRT_RCORE_OK) {                                             \
+        status = handle->accept(&handle->block, handle->accept_userdata);      \
+      }                                                                        \
+      if(sPREFIX##_is_reliable(&handle->block)) {                              \
+        /* ACKnowledge the packet by changing the ACK bit and only sending 8   \
+         * bytes. */                                                           \
+        sPREFIX##_set_ack(&handle->block, true);                               \
+        if(status == LRT_RCORE_OK) {                                           \
+          handle->transmit(handle->block.data, handle->transmit_userdata, 8u); \
+        }                                                                      \
+      }                                                                        \
     } else if(sPREFIX##_is_reliable(&handle->block)) {                         \
-      sPREFIX##_sequence_stack_handle_block(&handle->sequence_stack,           \
-                                            &handle->block,                    \
-                                            handle->accept,                    \
-                                            handle->accept_userdata,           \
-                                            handle->transmit,                  \
-                                            handle->transmit_userdata);        \
+      if(status == LRT_RCORE_OK) {                                             \
+        status =                                                               \
+          sPREFIX##_sequence_stack_handle_block(&handle->sequence_stack,       \
+                                                &handle->block,                \
+                                                handle->accept,                \
+                                                handle->accept_userdata,       \
+                                                handle->transmit,              \
+                                                handle->transmit_userdata);    \
+      }                                                                        \
     } else {                                                                   \
       /* If the block is not reliable, it can just be given to the acceptor.   \
        */                                                                      \
-      handle->accept(&handle->block, handle->accept_userdata);                 \
+      if(status == LRT_RCORE_OK) {                                             \
+        status = handle->accept(&handle->block, handle->accept_userdata);      \
+      }                                                                        \
     }                                                                          \
-    return LRT_RCORE_OK;                                                       \
+    return status;                                                             \
   }                                                                            \
   lrt_rcore_event_t sPREFIX##_parse_bytes(                                     \
     sPREFIX##_handle_t* handle, const uint8_t* data, size_t length)            \
   {                                                                            \
+    lrt_rcore_event_t status = LRT_RCORE_OK;                                   \
     for(size_t i = 0; i < length; ++i) {                                       \
       if(data[i] & LRT_LIBRBP_BLOCK_START_BIT) {                               \
         /* Begin of new block, old block can be given to next handler. */      \
@@ -120,7 +148,9 @@ extern "C"
           /* Only if the byte counter is dividable by 8, the block would       \
            * be discarded otherwise. This makes small blocks possible for      \
            * faster transmissions of small values. */                          \
-          sPREFIX##_handle_complete_block(handle);                             \
+          if(status == LRT_RCORE_OK) {                                         \
+            status = sPREFIX##_handle_complete_block(handle);                  \
+          }                                                                    \
         }                                                                      \
         handle->byte_counter = 0;                                              \
       }                                                                        \
@@ -129,10 +159,12 @@ extern "C"
     }                                                                          \
     /* Also handle finished blocks if there are no additional bytes. */        \
     if(handle->byte_counter > 0 && handle->byte_counter % 8 == 0) {            \
-      sPREFIX##_handle_complete_block(handle);                                 \
+      if(status == LRT_RCORE_OK) {                                             \
+        status = sPREFIX##_handle_complete_block(handle);                      \
+      }                                                                        \
     }                                                                          \
     handle->byte_counter = 0;                                                  \
-    return LRT_RCORE_OK;                                                       \
+    return status;                                                             \
   }
 
 #ifdef __cplusplus

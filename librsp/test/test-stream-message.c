@@ -4,7 +4,9 @@
 #define LRT_RCORE_DEBUG
 #include <RCore/librbp/block.h>
 
-LRT_LIBRBP_BLOCK_STRUCT(test, 8u, LRT_LIBRSP_STREAM_MESSAGE)
+#define iBLOCKSIZE 8u
+
+LRT_LIBRBP_BLOCK_STRUCT(test, iBLOCKSIZE, LRT_LIBRSP_STREAM_MESSAGE)
 
 void
 test_litecomm(test_block_t* block);
@@ -137,7 +139,7 @@ Test(stream_message, litecomm)
 
   // Which makes this packet a reliable stream start packet.
   // Data size should be data size - 4, so 3.
-  cr_assert_eq(test_get_data_size(&block), (block.size - (block.size / 8) - 4));
+  cr_assert_eq(test_get_data_size(&block), (iBLOCKSIZE - (iBLOCKSIZE / 8) - 4));
 
   // So setting data should also work from indices 0 to 2.
   test_data_various_contents(&block);
@@ -145,7 +147,7 @@ Test(stream_message, litecomm)
   // If the package becomes unreliable, the data size becomes 4 because of the
   // missing sequence numbers.
   test_set_reliable(&block, false);
-  cr_assert_eq(test_get_data_size(&block), (block.size - (block.size / 8) - 3));
+  cr_assert_eq(test_get_data_size(&block), (iBLOCKSIZE - (iBLOCKSIZE / 8) - 3));
 
   // LiteComm should also work correctly when running on unreliable data.
   test_litecomm(&block);

@@ -24,6 +24,16 @@ extern "C"
       stack->entries[i].sequence_number = -1;                                \
     }                                                                        \
   }                                                                          \
+  size_t sPREFIX##_ack_stack_count_pending(sPREFIX##_ack_stack_t* stack)     \
+  {                                                                          \
+    size_t count = 0;                                                        \
+    for(size_t i = 0; i < iACK_STACK_SIZE; ++i) {                            \
+      if(stack->entries[i].sequence_number >= 0) {                           \
+        ++count;                                                             \
+      }                                                                      \
+    }                                                                        \
+    return count;                                                            \
+  }                                                                          \
   lrt_rcore_event_t sPREFIX##_ack_stack_insert(sPREFIX##_ack_stack_t* stack, \
                                                sPREFIX##_block_t* block)     \
   {                                                                          \
@@ -38,10 +48,9 @@ extern "C"
     if(entry == NULL) {                                                      \
       return LRT_RCORE_ACK_STACK_FULL;                                       \
     }                                                                        \
-    /* Save the block this slot. The type and property are saved for faster  \
-     * accesses. */                                                          \
+    /* Save the block this slot. */                                          \
     entry->sequence_number = sPREFIX##_get_sequence_number(block);           \
-    memcpy(&entry->block, block, iBLOCK_SIZE);                               \
+    memcpy(&entry->block.data, block->data, iBLOCK_SIZE);                    \
                                                                              \
     return LRT_RCORE_OK;                                                     \
   }                                                                          \

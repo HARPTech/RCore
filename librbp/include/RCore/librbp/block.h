@@ -43,7 +43,6 @@ extern "C"
   typedef struct sPREFIX##_block_t                                          \
   {                                                                         \
     uint8_t data[iBLOCK_SIZE];                                              \
-    size_t size;                                                            \
     LRT_LIBRBP_BLOCK_STRUCT_DEBUG_MEMBERS(sPREFIX, iBLOCK_SIZE)             \
   } sPREFIX##_block_t;                                                      \
                                                                             \
@@ -54,7 +53,6 @@ extern "C"
     for(size_t i = 0; i < iBLOCK_SIZE; ++i) {                               \
       block->data[i] = (i == 0) ? 0b10000000 : 0;                           \
     }                                                                       \
-    block->size = iBLOCK_SIZE;                                              \
   }                                                                         \
   uint8_t sPREFIX##_get_block_data(sPREFIX##_block_t* block, size_t pos)    \
   {                                                                         \

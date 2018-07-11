@@ -23,16 +23,21 @@ extern "C"
 #include <assert.h>
 #include <stdint.h>
 
+#define LRT_LIBRSP_ACK 0b01000000u
+#define LRT_LIBRSP_RELIABLE 0b00100000u
 #define LRT_LIBRSP_STREAM_START 0b00010000u
 #define LRT_LIBRSP_STREAM_END 0b00001000u
 #define LRT_LIBRSP_STREAM_TINY 0b00011000u
 #define LRT_LIBRSP_STREAM_RUNNING 0b00000000u
 
 #define LRT_LIBRSP_STREAM_MESSAGE(sPREFIX, iDATA_SIZE)                         \
-  LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(sPREFIX, ack, 0u, 0b01000000u)       \
-  LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(sPREFIX, reliable, 0u, 0b00100000u)  \
-  LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(sPREFIX, sStart, 0u, 0b00010000u)    \
-  LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(sPREFIX, sEnd, 0u, 0b00001000u)      \
+  LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(sPREFIX, ack, 0u, LRT_LIBRSP_ACK)    \
+  LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(                                     \
+    sPREFIX, reliable, 0u, LRT_LIBRSP_RELIABLE)                                \
+  LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(                                     \
+    sPREFIX, sStart, 0u, LRT_LIBRSP_STREAM_START)                              \
+  LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(                                     \
+    sPREFIX, sEnd, 0u, LRT_LIBRSP_STREAM_END)                                  \
   uint8_t sPREFIX##_get_packetTypeBits(sPREFIX##_block_t* block)               \
   {                                                                            \
     return block->data[0] & 0b01111000u;                                       \
@@ -94,7 +99,6 @@ extern "C"
                                           uint8_t seq)                         \
   {                                                                            \
     assert(sPREFIX##_is_reliable(block));                                      \
-    assert(seq <= 0b00111111u);                                                \
     sPREFIX##_set_block_data(                                                  \
       block,                                                                   \
       1,                                                                       \

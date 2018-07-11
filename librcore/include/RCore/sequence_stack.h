@@ -8,6 +8,7 @@ extern "C"
 {
 #endif
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #define LRT_RCORE_SEQUENCE_STACK(                                              \
@@ -42,21 +43,17 @@ extern "C"
   {                                                                            \
     sPREFIX##_block_t* left = (sPREFIX##_block_t*)left_void;                   \
     sPREFIX##_block_t* right = (sPREFIX##_block_t*)right_void;                 \
+    if(!sPREFIX##_is_reliable(right)) {                                        \
+      return -1;                                                               \
+    }                                                                          \
     uint8_t left_seq_num = sPREFIX##_get_sequence_number(left);                \
     uint8_t left_next_seq_num = sPREFIX##_get_next_sequence_number(left);      \
     uint8_t right_seq_num = sPREFIX##_get_sequence_number(right);              \
     uint8_t right_next_seq_num = sPREFIX##_get_next_sequence_number(right);    \
-    if(left_seq_num == right_next_seq_num) {                                   \
-      return 1;                                                                \
-    }                                                                          \
-    if(left_next_seq_num == right_seq_num) {                                   \
-      return -1;                                                               \
-    }                                                                          \
-    if(left_seq_num ==                                                         \
-       right_seq_num) { /* Should not happen, but is implemented. */           \
-      return 0;                                                                \
-    }                                                                          \
-    return 0;                                                                  \
+    /* This calculates the distance of the two blocks and tries to put them    \
+     * into the correct order. */                                              \
+    int8_t dist = left_seq_num - right_seq_num;                                \
+    return dist;                                                               \
   }                                                                            \
   lrt_rcore_event_t sPREFIX##_sequence_stack_search_and_insert(                \
     sPREFIX##_sequence_stack_t* stack,                                         \
@@ -103,10 +100,9 @@ extern "C"
           } else {                                                             \
             /* If the packet is not the start of the stream, a block was       \
              * already lost. The packet is put into the stack at position 0    \
-             * and the stack counter is set to 1.                              \
+             * (later on) and the stack counter is set to 1.                   \
              */                                                                \
-            memcpy(entry->blocks[0].data, block->data, iBLOCK_SIZE);           \
-            entry->stack_counter = 1;                                          \
+            entry->stack_counter = 0;                                          \
             entry->expectedSequenceNumber = -1;                                \
           }                                                                    \
           break;                                                               \
@@ -156,35 +152,57 @@ extern "C"
       ++entry->stack_counter;                                                  \
       qsort(entry->blocks,                                                     \
             entry->stack_counter,                                              \
-            iBLOCK_SIZE,                                                       \
-            &sPREFIX##_sequence_stack_cmp);                                    \
-      sPREFIX##_block_t* tmp_block = NULL;                                     \
-      while(entry->expectedSequenceNumber ==                                   \
-            sPREFIX##_get_sequence_number(&entry->blocks[0])) {                \
-        tmp_block = &entry->blocks[0];                                         \
-        entry->expectedSequenceNumber =                                        \
-          sPREFIX##_get_next_sequence_number(tmp_block);                       \
-        acceptor(tmp_block, acceptor_userdata);                                \
-                                                                               \
-        if(sPREFIX##_is_reliable(tmp_block)) {                                 \
-          /* ACKnowledge the packet by changing the ACK bit and only sending 8 \
-           * bytes. */                                                         \
-          sPREFIX##_set_ack(tmp_block, true);                                  \
-          transmit_data(tmp_block->data, transmit_userdata, 8u);               \
+            sizeof(sPREFIX##_block_t),                                         \
+            sPREFIX##_sequence_stack_cmp);                                     \
+      /* Remove duplicates and find stream start. 100 is not reachable by      \
+       * normal means, which makes it the default value without similar        \
+       * sequence numbers in received blocks. */                               \
+      for(size_t i = 0, last_sequence_number = 100u; i < entry->stack_counter; \
+          ++i) {                                                               \
+        if(sPREFIX##_is_sStart(&entry->blocks[i])) {                           \
+          entry->expectedSequenceNumber =                                      \
+            sPREFIX##_get_sequence_number(&entry->blocks[i]);                  \
         }                                                                      \
-        if(sPREFIX##_is_sEnd(tmp_block)) {                                     \
-          /* If this packet is the end of the stream, the slot can directly be \
-           * made free again. */                                               \
-          entry->liteCommType = -1;                                            \
-          return LRT_RCORE_OK;                                                 \
+        if(sPREFIX##_get_sequence_number(&entry->blocks[i]) ==                 \
+           last_sequence_number) {                                             \
+          memmove(&entry->blocks[i - 1],                                       \
+                  &entry->blocks[i],                                           \
+                  (entry->stack_counter - i) * sizeof(sPREFIX##_block_t));     \
+          --entry->stack_counter;                                              \
         }                                                                      \
-        /* The stack counter can be counted down by one, because one element   \
-         * is going to be removed. */                                          \
-        --entry->stack_counter;                                                \
-        /* Move remaining blocks to the front, beginning at the 1st element up \
-         * to the new value of stack_counter. */                               \
-        memmove(entry->blocks, &entry->blocks[1], entry->stack_counter);       \
+        last_sequence_number =                                                 \
+          sPREFIX##_get_sequence_number(&entry->blocks[i]);                    \
       }                                                                        \
+    }                                                                          \
+    sPREFIX##_block_t* tmp_block = NULL;                                       \
+    while(entry->stack_counter > 0 &&                                          \
+          entry->expectedSequenceNumber ==                                     \
+            sPREFIX##_get_sequence_number(&entry->blocks[0])) {                \
+      tmp_block = &entry->blocks[0];                                           \
+      entry->expectedSequenceNumber =                                          \
+        sPREFIX##_get_next_sequence_number(tmp_block);                         \
+      acceptor(tmp_block, acceptor_userdata);                                  \
+                                                                               \
+      if(sPREFIX##_is_reliable(tmp_block)) {                                   \
+        /* ACKnowledge the packet by changing the ACK bit and only sending 8   \
+         * bytes. */                                                           \
+        sPREFIX##_set_ack(tmp_block, true);                                    \
+        transmit_data(tmp_block->data, transmit_userdata, 8u);                 \
+      }                                                                        \
+      if(sPREFIX##_is_sEnd(tmp_block)) {                                       \
+        /* If this packet is the end of the stream, the slot can directly be   \
+         * made free again. */                                                 \
+        entry->liteCommType = -1;                                              \
+        return LRT_RCORE_OK;                                                   \
+      }                                                                        \
+      /* The stack counter can be counted down by one, because one element     \
+       * is going to be removed. */                                            \
+      --entry->stack_counter;                                                  \
+      /* Move remaining blocks to the front, beginning at the 1st element up   \
+       * to the new value of stack_counter. */                                 \
+      memmove(entry->blocks,                                                   \
+              &entry->blocks[1],                                               \
+              entry->stack_counter * sizeof(sPREFIX##_block_t));               \
     }                                                                          \
     return LRT_RCORE_OK;                                                       \
   }                                                                            \
@@ -208,7 +226,7 @@ extern "C"
           /* ACKnowledge the packet by changing the ACK bit and only sending 8 \
            * bytes. */                                                         \
           sPREFIX##_set_ack(block, true);                                      \
-          transmit_data(block->data, transmit_userdata, 8u);                   \
+          return transmit_data(block->data, transmit_userdata, 8u);            \
         }                                                                      \
         break;                                                                 \
         /* Same handling for streaming packets - cases are differentiated      \

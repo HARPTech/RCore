@@ -9,6 +9,10 @@ extern "C"
   typedef enum lrt_rcore_event_t
   {
     LRT_RCORE_OK = 0,
+    LRT_RCORE_STACK_FULL = 1,
+    LRT_RCORE_ACK_STACK_FULL = 2,
+    LRT_RCORE_STACK_DEPTH_EXHAUSTED = 3,
+    LRT_RCORE_NO_ACK_ENTRY_FOUND = 4,
   } lrt_rcore_event_t;
 
 #ifdef __cplusplus

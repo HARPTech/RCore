@@ -25,11 +25,24 @@ extern "C"
 #include <assert.h>
 #include <stdint.h>
 
+#define LRT_LIBRSP_STREAM_START 0b00010000u
+#define LRT_LIBRSP_STREAM_END 0b00001000u
+#define LRT_LIBRSP_STREAM_TINY 0b00011000u
+#define LRT_LIBRSP_STREAM_RUNNING 0b00000000u
+
 #define LRT_LIBRSP_STREAM_MESSAGE(sPREFIX, iDATA_SIZE)                         \
   LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(sPREFIX, ack, 0u, 0b01000000u)       \
   LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(sPREFIX, reliable, 0u, 0b00100000u)  \
   LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(sPREFIX, sStart, 0u, 0b00010000u)    \
   LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(sPREFIX, sEnd, 0u, 0b00001000u)      \
+  uint8_t sPREFIX##_get_packetTypeBits(sPREFIX##_block_t* block)               \
+  {                                                                            \
+    return block->data[0] & 0b01111000u;                                       \
+  }                                                                            \
+  uint8_t sPREFIX##_get_packetStreamBits(sPREFIX##_block_t* block)             \
+  {                                                                            \
+    return block->data[0] & 0b00011000u;                                       \
+  }                                                                            \
   size_t sPREFIX##_get_data_size(sPREFIX##_block_t* block)                     \
   {                                                                            \
     return iDATA_SIZE - 3 - (sPREFIX##_is_reliable(block) ? 1 : 0);            \

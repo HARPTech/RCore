@@ -11,7 +11,7 @@ LRT_LIBRBP_BLOCK_STRUCT(test, 8U, NOOP)
 Test(block, set_data)
 {
   test_block_t block;
-  test_init(&block);
+  test_init_block(&block);
 
   cr_assert_eq(block.size, 8);
 
@@ -30,7 +30,7 @@ Test(block, set_data)
 Test(block, alternating)
 {
   test_block_t block;
-  test_init(&block);
+  test_init_block(&block);
 
   // Brute-Force Testing
   for(size_t i = 0; i < 8 - 1; ++i) {

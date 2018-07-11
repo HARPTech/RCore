@@ -1,7 +1,5 @@
-#ifndef LRT_LIBRSP_STREAM_MSG_H
-#define LRT_LIBRSP_STREAM_MSG_H
-
-#include <RCore/librcp/message.h>
+#ifndef LRT_LIBRSP_STREAM_MESSAGE_H
+#define LRT_LIBRSP_STREAM_MESSAGE_H
 
 #ifdef __cplusplus
 extern "C"

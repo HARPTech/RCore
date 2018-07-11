@@ -95,7 +95,7 @@ test_set_data_types(test_block_t* block)
 Test(message, types)
 {
   test_block_t block;
-  test_init(&block);
+  test_init_block(&block);
 
   // Test message types.
   test_set_litecomm_message_type(&block, LRT_RCP_MESSAGE_TYPE_UPDATE);

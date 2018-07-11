@@ -28,6 +28,15 @@ extern "C"
   {                                                                            \
     sPREFIX##_sequence_stack_entry_t entries[iSTACK_WIDTH];                    \
   } sPREFIX##_sequence_stack_t;                                                \
+  void sPREFIX##_init_sequence_stack(sPREFIX##_sequence_stack_t* stack)        \
+  {                                                                            \
+    for(size_t i = 0; i < iSTACK_WIDTH; ++i) {                                 \
+      stack->entries[i].expectedSequenceNumber = -1;                           \
+      stack->entries[i].liteCommType = -1;                                     \
+      stack->entries[i].liteCommProperty = -1;                                 \
+      stack->entries[i].stack_counter = 0;                                     \
+    }                                                                          \
+  }                                                                            \
   int sPREFIX##_sequence_stack_cmp(const void* left_void,                      \
                                    const void* right_void)                     \
   {                                                                            \

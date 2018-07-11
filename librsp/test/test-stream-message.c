@@ -89,7 +89,7 @@ test_litecomm(test_block_t* block)
 Test(stream_message, set_get_data)
 {
   test_block_t block;
-  test_init(&block);
+  test_init_block(&block);
   test_set_data(&block, 0, 10);
   test_set_data(&block, 1, 20);
   test_set_data(&block, 2, 42);
@@ -102,7 +102,7 @@ Test(stream_message, set_get_data)
 Test(stream_message, message_types)
 {
   test_block_t block;
-  test_init(&block);
+  test_init_block(&block);
 
   test_set_ack(&block, true);
   test_set_reliable(&block, false);
@@ -128,7 +128,7 @@ Test(stream_message, message_types)
 Test(stream_message, litecomm)
 {
   test_block_t block;
-  test_init(&block);
+  test_init_block(&block);
 
   test_set_ack(&block, false);
   test_set_reliable(&block, true);

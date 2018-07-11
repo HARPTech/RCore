@@ -14,7 +14,7 @@ target_include_directories(rcp
 
 # Endian
 if(BIG_ENDIAN)
-    target_compile_definitions(rcp -DBIG_ENDIAN)
+    target_compile_definitions(rcp PUBLIC -DBIG_ENDIAN)
 endif()
 
 # Tests

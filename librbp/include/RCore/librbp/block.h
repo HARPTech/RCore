@@ -1,5 +1,5 @@
-#ifndef LRT_LIBRBP_STREAM_MSG_H
-#define LRT_LIBRBP_STREAM_MSG_H
+#ifndef LRT_LIBRBP_BLOCK_H
+#define LRT_LIBRBP_BLOCK_H
 
 #include <RCore/librsp/stream_message.h>
 
@@ -47,7 +47,7 @@ extern "C"
     LRT_LIBRBP_BLOCK_STRUCT_DEBUG_MEMBERS(sPREFIX, iBLOCK_SIZE)             \
   } sPREFIX##_block_t;                                                      \
                                                                             \
-  void sPREFIX##_init(sPREFIX##_block_t* block)                             \
+  void sPREFIX##_init_block(sPREFIX##_block_t* block)                       \
   {                                                                         \
     static_assert(iBLOCK_SIZE % 8 == 0,                                     \
                   "Block sizes need to be multiples of 8.");                \

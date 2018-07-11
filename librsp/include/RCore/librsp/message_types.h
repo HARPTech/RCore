@@ -8,8 +8,6 @@ extern "C"
 
 #include <stdint.h>
 
-
-
 #ifdef __cplusplus
 }// closing brace for extern "C"
 #endif

@@ -18,6 +18,12 @@ extern "C"
   {                                                                          \
     sPREFIX##_ack_stack_entry_t entries[iACK_STACK_SIZE];                    \
   } sPREFIX##_ack_stack_t;                                                   \
+  void sPREFIX##_init_ack_stack(sPREFIX##_ack_stack_t* stack)                \
+  {                                                                          \
+    for(size_t i = 0; i < iACK_STACK_SIZE; ++i) {                            \
+      stack->entries[i].sequence_number = -1;                                \
+    }                                                                        \
+  }                                                                          \
   lrt_rcore_event_t sPREFIX##_ack_stack_insert(sPREFIX##_ack_stack_t* stack, \
                                                sPREFIX##_block_t* block)     \
   {                                                                          \

@@ -40,6 +40,11 @@ extern "C"
   size_t lrt_rcore_subscription_map_max_subscriptions(
     lrt_rcore_subscription_map_t* map);
 
+  void lrt_rcore_subscription_map_subscribe_to_all(
+    lrt_rcore_subscription_map_t* map,
+    uint8_t subscriber,
+    bool subscribe_to_all);
+
 #ifdef __cplusplus
 }// closing brace for extern "C"
 #endif

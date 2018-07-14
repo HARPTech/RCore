@@ -31,6 +31,7 @@ struct lrt_rcore_subscription_map_t
   khash_t(int16map) * map;
   size_t subscriptions[4];
   size_t max_subscriptions;
+  bool subscribe_to_all[4];
 };
 
 #include "../include/RCore/subscription-map.h"
@@ -51,6 +52,7 @@ lrt_rcore_subscription_map_init(size_t max_subscriptions)
 
   for(size_t i = 0; i < 4; ++i) {
     map->subscriptions[i] = 0;
+    map->subscribe_to_all[i] = false;
   }
 
   // Resize to the maximum number of subscriptions given to this initialisation
@@ -162,6 +164,13 @@ lrt_rcore_subscription_map_is_subscribed(lrt_rcore_subscription_map_t* map,
                                          uint16_t property,
                                          uint8_t subscriber)
 {
+  assert(map != 0);
+  assert(subscriber < 4);
+
+  if(map->subscribe_to_all[subscriber]) {
+    return true;
+  }
+
   enum hash_value_enum value =
     get_enum_from_map(map, type, property, subscriber);
 
@@ -216,4 +225,14 @@ lrt_rcore_subscription_map_max_subscriptions(lrt_rcore_subscription_map_t* map)
 {
   assert(map != 0);
   return map->max_subscriptions;
+}
+
+void
+lrt_rcore_subscription_map_subscribe_to_all(lrt_rcore_subscription_map_t* map,
+                                            uint8_t subscriber,
+                                            bool subscribe_to_all)
+{
+  assert(map != 0);
+  assert(subscriber < 4);
+  map->subscribe_to_all[subscriber] = subscribe_to_all;
 }

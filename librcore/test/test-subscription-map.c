@@ -119,3 +119,12 @@ Test(rcore, subscription_map_request, .init = setup, .fini = teardown)
   // Asking for the subscription again should give unsubscribed.
   cr_assert(!lrt_rcore_subscription_map_is_subscribed(map, 10, 10, 1));
 }
+
+Test(rcore, subscription_map_subscribe_to_all, .init = setup, .fini = teardown)
+{
+  lrt_rcore_subscription_map_subscribe_to_all(map, 1, true);
+  cr_assert(lrt_rcore_subscription_map_is_subscribed(map, 10, 10, 1));
+  cr_assert(lrt_rcore_subscription_map_is_subscribed(map, 10, 20, 1));
+  cr_assert(lrt_rcore_subscription_map_is_subscribed(map, 3, 20, 1));
+  cr_assert(!lrt_rcore_subscription_map_is_subscribed(map, 3, 20, 0));
+}

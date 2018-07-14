@@ -104,6 +104,9 @@ extern "C"
     sPREFIX##_handle_t* handle)                                                \
   {                                                                            \
     assert(handle->accept != NULL);                                            \
+    if(!sPREFIX##_is_block_valid(&handle->block)) {                            \
+      return LRT_RCORE_INVALID_BLOCK;                                          \
+    }                                                                          \
     lrt_rcore_event_t status = LRT_RCORE_OK;                                   \
     /* Blocks have to be handled according to the configuration of this RComm  \
      * stack. They are handled over the sequence stack. */                     \
@@ -158,6 +161,14 @@ extern "C"
           if(status == LRT_RCORE_OK) {                                         \
             status = sPREFIX##_handle_complete_block(handle);                  \
           }                                                                    \
+        }                                                                      \
+        handle->byte_counter = 0;                                              \
+      } else if(handle->byte_counter == iBLOCK_SIZE) {                         \
+        /* This seems like an overlong message. It should still be able to be  \
+         * parsed, if receiving is stopped now. This behaviour can be useful   \
+         * in environments like SPI or with harmful inputs. */                 \
+        if(status == LRT_RCORE_OK) {                                           \
+          status = sPREFIX##_handle_complete_block(handle);                    \
         }                                                                      \
         handle->byte_counter = 0;                                              \
       }                                                                        \

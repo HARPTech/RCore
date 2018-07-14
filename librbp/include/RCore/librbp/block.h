@@ -76,6 +76,18 @@ extern "C"
       (block->data[pos + 1U + (pos / 7U)] & (0xFFU >> ((pos % 7U) + 2U))) | \
       ((uint8_t)(val << (7u - ((pos % 7u) + 1u))) & 0b01111111u);           \
   }                                                                         \
+  bool sPREFIX##_is_block_valid(sPREFIX##_block_t* block)                   \
+  {                                                                         \
+    if((block->data[0] & LRT_LIBRBP_BLOCK_START_BIT) == 0) {                \
+      return false;                                                         \
+    }                                                                       \
+    for(size_t i = 1; i < iBLOCK_SIZE; ++i) {                               \
+      if(block->data[i] & LRT_LIBRBP_BLOCK_START_BIT) {                     \
+        return false;                                                       \
+      }                                                                     \
+    }                                                                       \
+    return true;                                                            \
+  }                                                                         \
   LRT_LIBRBP_BLOCK_STRUCT_DEBUG_FUNCTIONS(sPREFIX, iBLOCK_SIZE)             \
   INTERNAL(sPREFIX, (iBLOCK_SIZE - (iBLOCK_SIZE / 8u)))
 

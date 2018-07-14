@@ -46,3 +46,24 @@ Test(block, alternating)
     }
   }
 }
+
+Test(block, valid_invalid)
+{
+  test_block_t block;
+  test_init_block(&block);
+
+  for(size_t i = 0; i < 8 - 1; ++i) {
+    if(i % 2 == 0) {
+      test_set_block_data(&block, i, 0x0F);
+    } else {
+      test_set_block_data(&block, i, 0xF0);
+    }
+  }
+
+  cr_assert(test_is_block_valid(&block));
+
+  // Invalidate
+  block.data[7] = 255;
+
+  cr_assert(!test_is_block_valid(&block));
+}

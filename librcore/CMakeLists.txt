@@ -1,5 +1,6 @@
 set(LIBRCORE_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rcore.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/subscription-map.c
     )
 
 add_library(rcore STATIC
@@ -13,10 +14,13 @@ target_include_directories(rcore
     )
 
 target_link_libraries(rcore rbp)
+target_link_libraries(rcore klib)
 
 # Tests
 if(BUILD_TESTS)
-    add_executable(rcore-test-rcomm ${CMAKE_CURRENT_SOURCE_DIR}/test/test-rcomm.c)
+    add_executable(rcore-test-rcomm
+	${CMAKE_CURRENT_SOURCE_DIR}/test/test-rcomm.c
+	${CMAKE_CURRENT_SOURCE_DIR}/test/test-subscription-map.c)
     target_link_libraries(rcore-test-rcomm Criterion rcore)
     add_test(
 	NAME rcore-test-rcomm

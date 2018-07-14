@@ -158,7 +158,7 @@ transmit_userdata_t targetToSource = { .src_name = "Target",
 
 acceptor_userdata_t acceptor_userdata = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-void
+static void
 setup(void)
 {
   comm_init(&source);
@@ -170,7 +170,7 @@ setup(void)
   comm_set_transmit_cb(&source, &transmit_data_cb, &sourceToTarget);
   comm_set_transmit_cb(&target, &transmit_data_cb, &targetToSource);
 }
-void
+static void
 teardown(void)
 {}
 

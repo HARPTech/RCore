@@ -1,3 +1,6 @@
 [submodule "third_party/Criterion"]
 	path = third_party/Criterion
 	url = https://github.com/Snaipe/Criterion.git
+[submodule "third_party/klib"]
+	path = third_party/klib
+	url = https://github.com/attractivechaos/klib.git

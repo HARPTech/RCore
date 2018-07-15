@@ -6,6 +6,16 @@ extern "C"
 {
 #endif
 
+#include <byteswap.h>
+
+#if BIG_ENDIAN == 1
+#define LRT_LIBRSP_BYTESWAP16_IF_NEEDED(VALUE) VALUE = __bswap_16(VALUE)
+#define LRT_LIBRSP_BYTESWAP32_IF_NEEDED(VALUE) VALUE = __bswap_32(VALUE)
+#else
+#define LRT_LIBRSP_BYTESWAP16_IF_NEEDED(VALUE)
+#define LRT_LIBRSP_BYTESWAP32_IF_NEEDED(VALUE)
+#endif
+
 #define LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(                 \
   sPREFIX, sNAME, iDATA_INDEX, iDATA_POS)                        \
   bool sPREFIX##_is_##sNAME(sPREFIX##_block_t* block)            \
@@ -129,10 +139,12 @@ extern "C"
     property = (sPREFIX##_get_block_data(block, index) & 0x0Fu);               \
     property <<= 8u;                                                           \
     property |= sPREFIX##_get_block_data(block, index + 1u);                   \
+    LRT_LIBRSP_BYTESWAP16_IF_NEEDED(property);                                 \
     return property;                                                           \
   }                                                                            \
   void sPREFIX##_set_litecomm_property(sPREFIX##_block_t* block, uint16_t val) \
   {                                                                            \
+    LRT_LIBRSP_BYTESWAP16_IF_NEEDED(val);                                      \
     size_t index = sPREFIX##_is_reliable(block) ? 2 : 1;                       \
     sPREFIX##_set_block_data(                                                  \
       block,                                                                   \

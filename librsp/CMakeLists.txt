@@ -15,6 +15,13 @@ target_include_directories(rsp
 
 target_link_libraries(rsp rcp)
 
+# Endian
+if(BIG_ENDIAN)
+    target_compile_definitions(rsp PUBLIC -DBIG_ENDIAN=1)
+else()
+    target_compile_definitions(rsp PUBLIC -DBIG_ENDIAN=0)
+endif()
+
 # Tests
 if(BUILD_TESTS)
     add_executable(rsp-test-stream-message ${CMAKE_CURRENT_SOURCE_DIR}/test/test-stream-message.c)

@@ -22,7 +22,50 @@ extern "C"
   } lrt_rcp_message_type_t;
 
 #ifdef BIG_ENDIAN
-#define LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, sTYPENAME, tTYPE) _Pragma("error")
+#define LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, sTYPENAME, tTYPE)                \
+  /* This union wraps the specified type for conversion into bytes. */      \
+  union sPREFIX##__##tTYPE##_t                                              \
+  {                                                                         \
+    tTYPE data;                                                             \
+    uint8_t bytes[sizeof(tTYPE)];                                           \
+  };                                                                        \
+  static union sPREFIX##__##tTYPE##_t sPREFIX##__union_##tTYPE;             \
+                                                                            \
+  int16_t sPREFIX##_set_data_##sTYPENAME(                                   \
+    sPREFIX##_block_t* block, tTYPE data, int16_t counter)                  \
+  {                                                                         \
+    if(counter < 0) {                                                       \
+      counter = sizeof(tTYPE);                                              \
+    }                                                                       \
+    sPREFIX##__union_##tTYPE.data = data;                                   \
+    for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block);    \
+        ++i, --counter) {                                                   \
+      sPREFIX##_set_data(                                                   \
+        block, i, sPREFIX##__union_##tTYPE.bytes[sizeof(tTYPE) - counter]); \
+    }                                                                       \
+    return counter;                                                         \
+  }                                                                         \
+  int16_t sPREFIX##_get_data_##sTYPENAME(                                   \
+    sPREFIX##_block_t* block, tTYPE* data, int16_t counter)                 \
+  {                                                                         \
+    if(counter < 0) {                                                       \
+      counter = sizeof(tTYPE);                                              \
+      *data = 0;                                                            \
+      sPREFIX##__union_##tTYPE.data = 0;                                    \
+      sPREFIX##_set_sStart(block, true);                                    \
+    } else {                                                                \
+      sPREFIX##__union_##tTYPE.data = *data;                                \
+    }                                                                       \
+    for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block);    \
+        ++i, --counter) {                                                   \
+      sPREFIX##__union_##tTYPE.bytes[sizeof(tTYPE) - counter] =             \
+        sPREFIX##_get_data(block, i);                                       \
+    }                                                                       \
+    *data = sPREFIX##__union_##tTYPE.data;                                  \
+    if(counter == 0)                                                        \
+      sPREFIX##_set_sEnd(block, true);                                      \
+    return counter;                                                         \
+  }
 #else
 #define LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, sTYPENAME, tTYPE)             \
   /* This union wraps the specified type for conversion into bytes. */   \

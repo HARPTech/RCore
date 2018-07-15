@@ -48,8 +48,7 @@ extern "C"
                                                                             \
   void sPREFIX##_init_block(sPREFIX##_block_t* block)                       \
   {                                                                         \
-    static_assert(iBLOCK_SIZE % 8 == 0,                                     \
-                  "Block sizes need to be multiples of 8.");                \
+    assert(iBLOCK_SIZE % 8 == 0);                                           \
     for(size_t i = 0; i < iBLOCK_SIZE; ++i) {                               \
       block->data[i] = (i == 0) ? 0b10000000 : 0;                           \
     }                                                                       \

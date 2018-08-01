@@ -26,6 +26,11 @@ extern "C"
                                   8u,                        \
                                   128u)
 
+  // Crossovers for SPI and WIFI
+#define LRT_RCOMM_WIFI_SPI_CROSSOVER() \
+  LRT_RCORE_STACK_CROSSOVER_DUPLEX(    \
+    rcomm_wifi, rcomm_spi, LRT_RCOMM_SPI_BLOCKSIZE, LRT_RCOMM_WIFI_BLOCKSIZE)
+
 #ifdef __cplusplus
 }// closing brace for extern "C"
 #endif

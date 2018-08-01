@@ -152,6 +152,25 @@ extern "C"
       ((sPREFIX##_get_block_data(block, index) & 0xF0u)) |                     \
         ((uint8_t)(val >> 8u) & 0x0Fu));                                       \
     sPREFIX##_set_block_data(block, index + 1, val & 0xFFu);                   \
+  }                                                                            \
+  size_t sPREFIX##_insert_data(sPREFIX##_block_t* block,                       \
+                               const uint8_t* data,                            \
+                               size_t length,                                  \
+                               size_t offset)                                  \
+  {                                                                            \
+    /* Try to encode as much of the given data as possible and return how much \
+     * is left. This function completely disregards any other message data and \
+     * only handles the inner message data. */                                 \
+    for(size_t i = 0; length > 0 && i < iDATA_SIZE; ++i, --length, ++offset) { \
+      sPREFIX##_set_data(block, i, data[offset]);                              \
+    }                                                                          \
+    return offset;                                                             \
+  }                                                                            \
+  void sPREFIX##_read_data(                                                    \
+    sPREFIX##_block_t* block, uint8_t* target, size_t length)                  \
+  {                                                                            \
+    for(size_t i = 0; i < iDATA_SIZE && i < length; ++i)                       \
+      target[i] = sPREFIX##_get_data(block, i);                                \
   }
 
 #ifdef __cplusplus

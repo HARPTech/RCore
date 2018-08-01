@@ -73,6 +73,15 @@ Test(rcore, subscription_map_set_and_query, .init = setup, .fini = teardown)
   cr_assert(lrt_rcore_subscription_map_is_subscribed(map, 10, 10, 0));
   cr_assert(!lrt_rcore_subscription_map_is_subscribed(map, 10, 10, 1));
   cr_assert(!lrt_rcore_subscription_map_is_subscribed(map, 10, 10, 2));
+  cr_assert(lrt_rcore_subscription_map_is_subscribed(map, 10, 10, 3));
+
+  uint8_t subscribers = lrt_rcore_subscription_map_get_subscribers(map, 10, 10);
+  cr_assert_eq(subscribers, 9);
+
+  lrt_rcore_subscription_map_set_subscribed(map, 10, 10, 3, false);
+
+  subscribers = lrt_rcore_subscription_map_get_subscribers(map, 10, 10);
+  cr_assert_eq(subscribers, 1);
 }
 
 Test(rcore,

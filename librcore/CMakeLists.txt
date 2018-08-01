@@ -1,6 +1,7 @@
 set(LIBRCORE_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rcore.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subscription-map.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.c
     )
 
 add_library(rcore STATIC

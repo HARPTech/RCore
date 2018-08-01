@@ -114,60 +114,41 @@ extern "C"
 
 #endif
 
-#define LRT_LIBRCP_TYPES(sPREFIX)                                              \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Bool, bool)                               \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint8, uint8_t)                           \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int8, int8_t)                             \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint16, uint16_t)                         \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int16, int16_t)                           \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint32, uint32_t)                         \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int32, int32_t)                           \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint64, uint64_t)                         \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int64, int64_t)                           \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Float, float)                             \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Double, double)                           \
-  lrt_rcp_message_type_t sPREFIX##_get_litecomm_message_type(                  \
-    sPREFIX##_block_t* block)                                                  \
-  {                                                                            \
-    return (lrt_rcp_message_type_t)(sPREFIX##_get_data(block, 0) &             \
-                                    0b11000000u);                              \
-  }                                                                            \
-  void sPREFIX##_set_litecomm_message_type(sPREFIX##_block_t* block,           \
-                                           lrt_rcp_message_type_t type)        \
-  {                                                                            \
-    sPREFIX##_set_data(                                                        \
-      block, 0, (sPREFIX##_get_data(block, 0) & 0b00111111u) | type);          \
-  }                                                                            \
-  uint8_t sPREFIX##_get_litecomm_sequence_number(sPREFIX##_block_t* block)     \
-  {                                                                            \
-    return sPREFIX##_get_data(block, 0) & 0b00111111u;                         \
-  }                                                                            \
-  void sPREFIX##_set_litecomm_sequence_number(sPREFIX##_block_t* block,        \
-                                              uint8_t seq)                     \
-  {                                                                            \
-    sPREFIX##_set_data(block,                                                  \
-                       0,                                                      \
-                       sPREFIX##_get_litecomm_message_type(block) |            \
-                         (seq & 0b00111111u));                                 \
-  }                                                                            \
-  size_t sPREFIX##_insert_data(sPREFIX##_block_t* block,                       \
-                               const uint8_t* data,                            \
-                               size_t length,                                  \
-                               size_t offset)                                  \
-  {                                                                            \
-    /* Try to encode as much of the given data as possible and return how much \
-     * is left. This function completely disregards any other message data and \
-     * only handles the inner message data. */                                 \
-    for(size_t i = 0; length > 0 && i < iDATA_SIZE; ++i, --length, ++offset) { \
-      sPREFIX##_set_data(block, i, data[]);                                    \
-    }                                                                          \
-    return offset;                                                             \
-  }                                                                            \
-  void sPREFIX##_read_data(                                                    \
-    sPREFIX##_block_t* block, uint8_t* target, size_t length)                  \
-  {                                                                            \
-    for(size_t i = 0; i < iDATA_SIZE && i < length; ++i)                       \
-      target[i] = sPREFIX##_get_data(block, i);                                \
+#define LRT_LIBRCP_TYPES(sPREFIX)                                          \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Bool, bool)                           \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint8, uint8_t)                       \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int8, int8_t)                         \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint16, uint16_t)                     \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int16, int16_t)                       \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint32, uint32_t)                     \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int32, int32_t)                       \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint64, uint64_t)                     \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int64, int64_t)                       \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Float, float)                         \
+  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Double, double)                       \
+  lrt_rcp_message_type_t sPREFIX##_get_litecomm_message_type(              \
+    sPREFIX##_block_t* block)                                              \
+  {                                                                        \
+    return (lrt_rcp_message_type_t)(sPREFIX##_get_data(block, 0) &         \
+                                    0b11000000u);                          \
+  }                                                                        \
+  void sPREFIX##_set_litecomm_message_type(sPREFIX##_block_t* block,       \
+                                           lrt_rcp_message_type_t type)    \
+  {                                                                        \
+    sPREFIX##_set_data(                                                    \
+      block, 0, (sPREFIX##_get_data(block, 0) & 0b00111111u) | type);      \
+  }                                                                        \
+  uint8_t sPREFIX##_get_litecomm_sequence_number(sPREFIX##_block_t* block) \
+  {                                                                        \
+    return sPREFIX##_get_data(block, 0) & 0b00111111u;                     \
+  }                                                                        \
+  void sPREFIX##_set_litecomm_sequence_number(sPREFIX##_block_t* block,    \
+                                              uint8_t seq)                 \
+  {                                                                        \
+    sPREFIX##_set_data(block,                                              \
+                       0,                                                  \
+                       sPREFIX##_get_litecomm_message_type(block) |        \
+                         (seq & 0b00111111u));                             \
   }
 
 #ifdef __cplusplus

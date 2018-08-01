@@ -8,6 +8,7 @@
 // clang-format off
 #include <RCore/librcp/message.h>
 #include "sequence_stack.h"
+#include "transmit_buffer.h"
 // clang-format on
 #include <RCore/librbp/block.h>
 
@@ -30,11 +31,13 @@ extern "C"
   LRT_RCORE_SEQUENCE_STACK(sPREFIX, iBLOCK_SIZE, iSTACK_WIDTH, iSTACK_DEPTH)   \
   LRT_RCORE_ACK_STACK(sPREFIX, iBLOCK_SIZE, iACK_STACK_SIZE)                   \
   LRT_LIBRCP_TYPES(sPREFIX)                                                    \
+  /* The iDATA_SIZE is one smaller than the stream message INTERNAL size,      \
+   * because one byte is used for LiteComm message type and sequence number.   \
+   */                                                                          \
+  LRT_RCORE_TRANSMITBUFFER(sPREFIX, ((iBLOCK_SIZE - (iBLOCK_SIZE / 8u)) - 1))  \
   typedef struct sPREFIX##_handle_t                                            \
   {                                                                            \
     sPREFIX##_block_t block;                                                   \
-    uint8_t sequence_number_counter;                                           \
-    uint8_t receiving_sequence_number_counter;                                 \
     size_t byte_counter;                                                       \
     sPREFIX##_sequence_stack_t sequence_stack;                                 \
     sPREFIX##_ack_stack_t ack_stack;                                           \
@@ -52,8 +55,6 @@ extern "C"
     handle->transmit_userdata = NULL;                                          \
     handle->accept_userdata = NULL;                                            \
     handle->byte_counter = 0;                                                  \
-    handle->sequence_number_counter = 0;                                       \
-    handle->receiving_sequence_number_counter = 0;                             \
   }                                                                            \
   void sPREFIX##_set_transmit_cb(                                              \
     sPREFIX##_handle_t* handle, sPREFIX##_transmit_data_cb cb, void* userdata) \
@@ -80,15 +81,6 @@ extern "C"
     assert(handle->transmit != NULL);                                          \
     lrt_rcore_event_t status = LRT_RCORE_OK;                                   \
     if(sPREFIX##_is_reliable(block)) {                                         \
-      sPREFIX##_set_sequence_number(block, handle->sequence_number_counter);   \
-      sPREFIX##_set_next_sequence_number(block,                                \
-                                         handle->sequence_number_counter + 1); \
-      ++handle->sequence_number_counter;                                       \
-      if(handle->sequence_number_counter == 0b01000000u) {                     \
-        /* The next sequence number will be 0 again, like wrapping the binary  \
-         * digits at 6. */                                                     \
-        handle->sequence_number_counter = 0b00000000u;                         \
-      }                                                                        \
       status = sPREFIX##_ack_stack_insert(&handle->ack_stack, block);          \
       if(status != LRT_RCORE_OK) {                                             \
         return status;                                                         \
@@ -159,6 +151,7 @@ extern "C"
            * be discarded otherwise. This makes small blocks possible for      \
            * faster transmissions of small values. */                          \
           if(status == LRT_RCORE_OK) {                                         \
+            handle->block.significant_bytes = handle->byte_counter;            \
             status = sPREFIX##_handle_complete_block(handle);                  \
           }                                                                    \
         }                                                                      \

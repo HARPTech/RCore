@@ -2,6 +2,7 @@
 #define LRT_LIBRCORE_ACK_STACK_H
 
 #include "events.h"
+#include "internal/hashtable.h"
 
 #ifdef __cplusplus
 extern "C"

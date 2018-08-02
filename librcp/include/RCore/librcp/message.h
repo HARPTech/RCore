@@ -6,6 +6,8 @@ extern "C"
 {
 #endif
 
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
   /* Encodes the message type. The rest of the bits is held free for an inner
@@ -21,72 +23,51 @@ extern "C"
     LRT_RCP_MESSAGE_TYPE_UNSUBSCRIBE = 0b11000000,
   } lrt_rcp_message_type_t;
 
+  /* Conversion Unions
+   * -----------------------------------------------------------------
+   */
+
+#define LRT_LIBRCP_CONVERSION_UNION(sTYPENAME, tTYPE)                   \
+  union lrt_librcp_##sTYPENAME##_t                                      \
+  {                                                                     \
+    tTYPE val;                                                          \
+    uint8_t bytes[sizeof(tTYPE)];                                       \
+  };                                                                    \
+  static union lrt_librcp_##sTYPENAME##_t lrt_librcp_union_##sTYPENAME; \
+  const uint8_t* lrt_librcp_##sTYPENAME##_to_data(const tTYPE val);     \
+  tTYPE lrt_librcp_##sTYPENAME##_from_data(const uint8_t* data, size_t length);
+
+  LRT_LIBRCP_CONVERSION_UNION(Bool, bool)
+  LRT_LIBRCP_CONVERSION_UNION(Uint8, uint8_t)
+  LRT_LIBRCP_CONVERSION_UNION(Int8, int8_t)
+  LRT_LIBRCP_CONVERSION_UNION(Uint16, uint16_t)
+  LRT_LIBRCP_CONVERSION_UNION(Int16, int16_t)
+  LRT_LIBRCP_CONVERSION_UNION(Uint32, uint32_t)
+  LRT_LIBRCP_CONVERSION_UNION(Int32, int32_t)
+  LRT_LIBRCP_CONVERSION_UNION(Uint64, uint64_t)
+  LRT_LIBRCP_CONVERSION_UNION(Int64, int64_t)
+  LRT_LIBRCP_CONVERSION_UNION(Float, float)
+  LRT_LIBRCP_CONVERSION_UNION(Double, double)
+
+  /* Block conversions
+   * -----------------------------------------------------------------
+   */
+
 #ifdef BIG_ENDIAN
-#define LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, sTYPENAME, tTYPE)                \
-  /* This union wraps the specified type for conversion into bytes. */      \
-  union sPREFIX##__##tTYPE##_t                                              \
-  {                                                                         \
-    tTYPE data;                                                             \
-    uint8_t bytes[sizeof(tTYPE)];                                           \
-  };                                                                        \
-  static union sPREFIX##__##tTYPE##_t sPREFIX##__union_##tTYPE;             \
-                                                                            \
-  int16_t sPREFIX##_set_data_##sTYPENAME(                                   \
-    sPREFIX##_block_t* block, tTYPE data, int16_t counter)                  \
-  {                                                                         \
-    if(counter < 0) {                                                       \
-      counter = sizeof(tTYPE);                                              \
-    }                                                                       \
-    sPREFIX##__union_##tTYPE.data = data;                                   \
-    for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block);    \
-        ++i, --counter) {                                                   \
-      sPREFIX##_set_data(                                                   \
-        block, i, sPREFIX##__union_##tTYPE.bytes[sizeof(tTYPE) - counter]); \
-    }                                                                       \
-    return counter;                                                         \
-  }                                                                         \
-  int16_t sPREFIX##_get_data_##sTYPENAME(                                   \
-    sPREFIX##_block_t* block, tTYPE* data, int16_t counter)                 \
-  {                                                                         \
-    if(counter < 0) {                                                       \
-      counter = sizeof(tTYPE);                                              \
-      *data = 0;                                                            \
-      sPREFIX##__union_##tTYPE.data = 0;                                    \
-      sPREFIX##_set_sStart(block, true);                                    \
-    } else {                                                                \
-      sPREFIX##__union_##tTYPE.data = *data;                                \
-    }                                                                       \
-    for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block);    \
-        ++i, --counter) {                                                   \
-      sPREFIX##__union_##tTYPE.bytes[sizeof(tTYPE) - counter] =             \
-        sPREFIX##_get_data(block, i);                                       \
-    }                                                                       \
-    *data = sPREFIX##__union_##tTYPE.data;                                  \
-    if(counter == 0)                                                        \
-      sPREFIX##_set_sEnd(block, true);                                      \
-    return counter;                                                         \
-  }
-#else
 #define LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, sTYPENAME, tTYPE)             \
-  /* This union wraps the specified type for conversion into bytes. */   \
-  union sPREFIX##__##tTYPE##_t                                           \
-  {                                                                      \
-    tTYPE data;                                                          \
-    uint8_t bytes[sizeof(tTYPE)];                                        \
-  };                                                                     \
-  static union sPREFIX##__##tTYPE##_t sPREFIX##__union_##tTYPE;          \
-                                                                         \
   int16_t sPREFIX##_set_data_##sTYPENAME(                                \
     sPREFIX##_block_t* block, tTYPE data, int16_t counter)               \
   {                                                                      \
     if(counter < 0) {                                                    \
       counter = sizeof(tTYPE);                                           \
     }                                                                    \
-    sPREFIX##__union_##tTYPE.data = data;                                \
+    lrt_librcp_union_##sTYPENAME.val = data;                             \
     for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block); \
         ++i, --counter) {                                                \
       sPREFIX##_set_data(                                                \
-        block, i, sPREFIX##__union_##tTYPE.bytes[counter - 1]);          \
+        block,                                                           \
+        i,                                                               \
+        lrt_librcp_union_##sTYPENAME.bytes[sizeof(tTYPE) - counter]);    \
     }                                                                    \
     return counter;                                                      \
   }                                                                      \
@@ -96,17 +77,54 @@ extern "C"
     if(counter < 0) {                                                    \
       counter = sizeof(tTYPE);                                           \
       *data = 0;                                                         \
-      sPREFIX##__union_##tTYPE.data = 0;                                 \
+      lrt_librcp_union_##sTYPENAME.val = 0;                              \
       sPREFIX##_set_sStart(block, true);                                 \
     } else {                                                             \
-      sPREFIX##__union_##tTYPE.data = *data;                             \
+      lrt_librcp_union_##sTYPENAME.val = *data;                          \
     }                                                                    \
     for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block); \
         ++i, --counter) {                                                \
-      sPREFIX##__union_##tTYPE.bytes[counter - 1] =                      \
+      lrt_librcp_union_##sTYPENAME.bytes[sizeof(tTYPE) - counter] =      \
         sPREFIX##_get_data(block, i);                                    \
     }                                                                    \
-    *data = sPREFIX##__union_##tTYPE.data;                               \
+    *data = lrt_librcp_union_##sTYPENAME.val;                            \
+    if(counter == 0)                                                     \
+      sPREFIX##_set_sEnd(block, true);                                   \
+    return counter;                                                      \
+  }
+#else
+#define LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, sTYPENAME, tTYPE)             \
+  int16_t sPREFIX##_set_data_##sTYPENAME(                                \
+    sPREFIX##_block_t* block, tTYPE data, int16_t counter)               \
+  {                                                                      \
+    if(counter < 0) {                                                    \
+      counter = sizeof(tTYPE);                                           \
+    }                                                                    \
+    lrt_librcp_union_##sTYPENAME.val = data;                                \
+    for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block); \
+        ++i, --counter) {                                                \
+      sPREFIX##_set_data(                                                \
+        block, i, lrt_librcp_union_##sTYPENAME.bytes[counter - 1]);          \
+    }                                                                    \
+    return counter;                                                      \
+  }                                                                      \
+  int16_t sPREFIX##_get_data_##sTYPENAME(                                \
+    sPREFIX##_block_t* block, tTYPE* data, int16_t counter)              \
+  {                                                                      \
+    if(counter < 0) {                                                    \
+      counter = sizeof(tTYPE);                                           \
+      *data = 0;                                                         \
+      lrt_librcp_union_##sTYPENAME.val = 0;                                 \
+      sPREFIX##_set_sStart(block, true);                                 \
+    } else {                                                             \
+      lrt_librcp_union_##sTYPENAME.val = *data;                             \
+    }                                                                    \
+    for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block); \
+        ++i, --counter) {                                                \
+      lrt_librcp_union_##sTYPENAME.bytes[counter - 1] =                      \
+        sPREFIX##_get_data(block, i);                                    \
+    }                                                                    \
+    *data = lrt_librcp_union_##sTYPENAME.val;                               \
     if(counter == 0)                                                     \
       sPREFIX##_set_sEnd(block, true);                                   \
     return counter;                                                      \

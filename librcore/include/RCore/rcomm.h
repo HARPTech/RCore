@@ -31,10 +31,6 @@ extern "C"
   LRT_RCORE_SEQUENCE_STACK(sPREFIX, iBLOCK_SIZE, iSTACK_WIDTH, iSTACK_DEPTH)   \
   LRT_RCORE_ACK_STACK(sPREFIX, iBLOCK_SIZE, iACK_STACK_SIZE)                   \
   LRT_LIBRCP_TYPES(sPREFIX)                                                    \
-  /* The iDATA_SIZE is one smaller than the stream message INTERNAL size,      \
-   * because one byte is used for LiteComm message type and sequence number.   \
-   */                                                                          \
-  LRT_RCORE_TRANSMITBUFFER(sPREFIX, ((iBLOCK_SIZE - (iBLOCK_SIZE / 8u)) - 1))  \
   typedef struct sPREFIX##_handle_t                                            \
   {                                                                            \
     sPREFIX##_block_t block;                                                   \

@@ -1,5 +1,5 @@
 set(LIBRCP_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/types.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/message.c
     )
 
 add_library(rcp STATIC

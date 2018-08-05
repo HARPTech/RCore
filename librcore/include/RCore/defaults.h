@@ -8,7 +8,17 @@ extern "C"
 {
 #endif
 
-#define LRT_RCOMM_SPI_BLOCKSIZE 16
+#define LRT_RCOMM_BLOCKSIZE 16
+#define LRT_RCOMM_UNIVERSAL_DEFINITIONS()      \
+  LRT_RCORE_RCOMM_DEFINE_PROTOCOL_DEFINITIONS( \
+    rcomm, LRT_RCOMM_BLOCKSIZE, LRT_LIBRSP_STREAM_MESSAGE, 6u, 16u, 128u)
+#define LRT_RCOMM_UNIVERSAL()      \
+  LRT_RCORE_RCOMM_DEFINE_PROTOCOL( \
+    rcomm, LRT_RCOMM_BLOCKSIZE, LRT_LIBRSP_STREAM_MESSAGE, 6u, 16u, 128u)
+
+  typedef struct rcomm_handle_t rcomm_handle_t;
+
+#define LRT_RCOMM_SPI_BLOCKSIZE LRT_RCOMM_BLOCKSIZE
 #define LRT_RCOMM_SPI()                                      \
   LRT_RCORE_RCOMM_DEFINE_PROTOCOL(rcomm_spi,                 \
                                   LRT_RCOMM_SPI_BLOCKSIZE,   \
@@ -17,7 +27,7 @@ extern "C"
                                   4u,                        \
                                   32u)
 
-#define LRT_RCOMM_WIFI_BLOCKSIZE 16
+#define LRT_RCOMM_WIFI_BLOCKSIZE LRT_RCOMM_BLOCKSIZE
 #define LRT_RCOMM_WIFI()                                     \
   LRT_RCORE_RCOMM_DEFINE_PROTOCOL(rcomm_wifi,                \
                                   LRT_RCOMM_WIFI_BLOCKSIZE,  \

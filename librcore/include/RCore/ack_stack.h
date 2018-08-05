@@ -9,6 +9,20 @@ extern "C"
 {
 #endif
 
+#define LRT_RCORE_ACK_STACK_DEFINITIONS(sPREFIX, iBLOCK_SIZE, iACK_STACK_SIZE) \
+  typedef struct sPREFIX##_ack_stack_entry_t                                   \
+  {                                                                            \
+  } sPREFIX##_ack_stack_entry_t;                                               \
+  typedef struct sPREFIX##_ack_stack_t                                         \
+  {                                                                            \
+  } sPREFIX##_ack_stack_t;                                                     \
+  void sPREFIX##_init_ack_stack(sPREFIX##_ack_stack_t* stack);                 \
+  size_t sPREFIX##_ack_stack_count_pending(sPREFIX##_ack_stack_t* stack);      \
+  lrt_rcore_event_t sPREFIX##_ack_stack_insert(sPREFIX##_ack_stack_t* stack,   \
+                                               sPREFIX##_block_t* block);      \
+  lrt_rcore_event_t sPREFIX##_ack_stack_remove(sPREFIX##_ack_stack_t* stack,   \
+                                               sPREFIX##_block_t* block);
+
 #define LRT_RCORE_ACK_STACK(sPREFIX, iBLOCK_SIZE, iACK_STACK_SIZE)           \
   typedef struct sPREFIX##_ack_stack_entry_t                                 \
   {                                                                          \

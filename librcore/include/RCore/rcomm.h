@@ -24,6 +24,36 @@ extern "C"
    * Use it as it is used in the test code.
    */
 
+#define LRT_RCORE_RCOMM_DEFINE_PROTOCOL_DEFINITIONS(                           \
+  sPREFIX, iBLOCK_SIZE, tMESSAGE, iSTACK_WIDTH, iSTACK_DEPTH, iACK_STACK_SIZE) \
+  LRT_LIBRBP_BLOCK_STRUCT(sPREFIX, iBLOCK_SIZE, tMESSAGE)                      \
+  LRT_RCORE_CALLBACKS(sPREFIX)                                                 \
+  LRT_RCORE_ACK_STACK_DEFINITIONS(sPREFIX, iBLOCK_SIZE, iACK_STACK_SIZE)       \
+  LRT_LIBRCP_TYPES_DEFINITIONS(sPREFIX)                                        \
+  typedef struct sPREFIX##_handle_t                                            \
+  {                                                                            \
+  } sPREFIX##_handle_t;                                                        \
+  void sPREFIX##_init(sPREFIX##_handle_t* handle);                             \
+  sPREFIX##_handle_t* sPREFIX##_create();                                      \
+  void sPREFIX##_free(sPREFIX##_handle_t* handle);                             \
+  void sPREFIX##_set_transmit_cb(sPREFIX##_handle_t* handle,                   \
+                                 sPREFIX##_transmit_data_cb cb,                \
+                                 void* userdata);                              \
+  void sPREFIX##_set_accept_cb(                                                \
+    sPREFIX##_handle_t* handle, sPREFIX##_accept_block_cb cb, void* userdata); \
+  lrt_rcore_event_t sPREFIX##_send_block(                                      \
+    sPREFIX##_handle_t* handle, sPREFIX##_block_t* block, size_t bytes);       \
+  lrt_rcore_event_t sPREFIX##_send_tb_entry(                                   \
+    sPREFIX##_handle_t* handle, lrt_rcore_transmit_buffer_entry_t* entry);     \
+  lrt_rcore_event_t sPREFIX##_transfer_block_to_tb(                            \
+    sPREFIX##_handle_t* handle,                                                \
+    sPREFIX##_block_t* block,                                                  \
+    lrt_rcore_transmit_buffer_t* tb);                                          \
+  lrt_rcore_event_t sPREFIX##_handle_complete_block(                           \
+    sPREFIX##_handle_t* handle);                                               \
+  lrt_rcore_event_t sPREFIX##_parse_bytes(                                     \
+    sPREFIX##_handle_t* handle, const uint8_t* data, size_t length);
+
 #define LRT_RCORE_RCOMM_DEFINE_PROTOCOL(                                       \
   sPREFIX, iBLOCK_SIZE, tMESSAGE, iSTACK_WIDTH, iSTACK_DEPTH, iACK_STACK_SIZE) \
   LRT_LIBRBP_BLOCK_STRUCT(sPREFIX, iBLOCK_SIZE, tMESSAGE)                      \
@@ -33,7 +63,7 @@ extern "C"
   LRT_LIBRCP_TYPES(sPREFIX)                                                    \
   typedef struct sPREFIX##_handle_t                                            \
   {                                                                            \
-    sPREFIX##_block_t block;                                                   \
+    sPREFIX##_block_t block, outgoing_block;                                   \
     size_t byte_counter;                                                       \
     sPREFIX##_sequence_stack_t sequence_stack;                                 \
     sPREFIX##_ack_stack_t ack_stack;                                           \
@@ -46,12 +76,21 @@ extern "C"
   void sPREFIX##_init(sPREFIX##_handle_t* handle)                              \
   {                                                                            \
     sPREFIX##_init_block(&handle->block);                                      \
+    sPREFIX##_init_block(&handle->outgoing_block);                             \
     sPREFIX##_init_ack_stack(&handle->ack_stack);                              \
     sPREFIX##_init_sequence_stack(&handle->sequence_stack);                    \
     handle->transmit_userdata = NULL;                                          \
     handle->accept_userdata = NULL;                                            \
     handle->byte_counter = 0;                                                  \
   }                                                                            \
+  sPREFIX##_handle_t* sPREFIX##_create()                                       \
+  {                                                                            \
+    sPREFIX##_handle_t* handle =                                               \
+      (sPREFIX##_handle_t*)malloc(sizeof(sPREFIX##_handle_t));                 \
+    sPREFIX##_init(handle);                                                    \
+    return handle;                                                             \
+  }                                                                            \
+  void sPREFIX##_free(sPREFIX##_handle_t* handle) { free(handle); }            \
   void sPREFIX##_set_transmit_cb(                                              \
     sPREFIX##_handle_t* handle, sPREFIX##_transmit_data_cb cb, void* userdata) \
   {                                                                            \
@@ -88,6 +127,75 @@ extern "C"
     status = handle->transmit(block->data, handle->transmit_userdata, bytes);  \
     return status;                                                             \
   }                                                                            \
+  lrt_rcore_event_t sPREFIX##_send_tb_entry(                                   \
+    sPREFIX##_handle_t* handle, lrt_rcore_transmit_buffer_entry_t* entry)      \
+  {                                                                            \
+    lrt_rcore_event_t status = LRT_RCORE_OK;                                   \
+    assert(handle != 0);                                                       \
+    assert(entry != 0);                                                        \
+    assert(entry->data != 0);                                                  \
+    assert(entry->data->l != 0);                                               \
+    sPREFIX##_set_sStart(&handle->outgoing_block, true);                       \
+    sPREFIX##_set_reliable(&handle->outgoing_block, entry->reliable);          \
+    while(status == LRT_RCORE_OK &&                                            \
+          !lrt_rcore_transmit_buffer_entry_transmit_finished(entry)) {         \
+      /* Each iteration handles a new block to be transmitted. */              \
+      entry->transmit_offset =                                                 \
+        sPREFIX##_insert_data(&handle->outgoing_block,                         \
+                              (const uint8_t*)entry->data->s,                  \
+                              entry->data->l,                                  \
+                              entry->transmit_offset);                         \
+      /* Set rest of block data fields. */                                     \
+      if(entry->reliable) {                                                    \
+        sPREFIX##_set_sequence_number(&handle->outgoing_block,                 \
+                                      entry->seq_number++);                    \
+        sPREFIX##_set_next_sequence_number(&handle->outgoing_block,            \
+                                           entry->seq_number);                 \
+      }                                                                        \
+      sPREFIX##_set_sEnd(                                                      \
+        &handle->outgoing_block,                                               \
+        !lrt_rcore_transmit_buffer_entry_transmit_finished(entry));            \
+      sPREFIX##_set_litecomm_type(&handle->outgoing_block, entry->type);       \
+      sPREFIX##_set_litecomm_property(&handle->outgoing_block,                 \
+                                      entry->property);                        \
+      if(lrt_rcore_transmit_buffer_entry_transmit_finished(entry)) {           \
+        sPREFIX##_set_sEnd(&handle->outgoing_block, true);                     \
+      }                                                                        \
+      status = sPREFIX##_send_block(handle,                                    \
+                                    &handle->outgoing_block,                   \
+                                    handle->outgoing_block.significant_bytes); \
+      sPREFIX##_set_sStart(&handle->outgoing_block, false);                    \
+    }                                                                          \
+    if(lrt_rcore_transmit_buffer_entry_transmit_finished(entry)) {             \
+      lrt_rcore_transmit_buffer_free_send_slot(entry->origin, entry);          \
+    }                                                                          \
+    return status;                                                             \
+  }                                                                            \
+  lrt_rcore_event_t sPREFIX##_transfer_block_to_tb(                            \
+    sPREFIX##_handle_t* handle,                                                \
+    sPREFIX##_block_t* block,                                                  \
+    lrt_rcore_transmit_buffer_t* tb)                                           \
+  {                                                                            \
+    uint8_t packetTypeBits = sPREFIX##_get_packetTypeBits(block);              \
+    for(size_t i = 0; i < sPREFIX##_get_data_size(block) - 1; ++i) {           \
+      lrt_rcore_transmit_buffer_receive_data_byte(                             \
+        tb,                                                                    \
+        sPREFIX##_get_litecomm_type(block),                                    \
+        sPREFIX##_get_litecomm_property(block),                                \
+        packetTypeBits& LRT_LIBRSP_STREAM_START,                               \
+        sPREFIX##_get_data(block, i),                                          \
+        sPREFIX##_is_reliable(block));                                         \
+    }                                                                          \
+    /* The last byte gets information about the state of sEnd. */              \
+    lrt_rcore_transmit_buffer_receive_data_byte(                               \
+      tb,                                                                      \
+      sPREFIX##_get_litecomm_type(block),                                      \
+      sPREFIX##_get_litecomm_property(block),                                  \
+      packetTypeBits,                                                          \
+      sPREFIX##_get_data(block, sPREFIX##_get_data_size(block) - 1),           \
+      sPREFIX##_is_reliable(block));                                           \
+    return LRT_RCORE_OK;                                                       \
+  }                                                                            \
   lrt_rcore_event_t sPREFIX##_handle_complete_block(                           \
     sPREFIX##_handle_t* handle)                                                \
   {                                                                            \
@@ -96,11 +204,11 @@ extern "C"
       return LRT_RCORE_INVALID_BLOCK;                                          \
     }                                                                          \
     lrt_rcore_event_t status = LRT_RCORE_OK;                                   \
-    /* Blocks have to be handled according to the configuration of this RComm  \
-     * stack. They are handled over the sequence stack. */                     \
+    /* Blocks have to be handled according to the configuration of this        \
+     * RComm stack. They are handled over the sequence stack. */               \
     if(sPREFIX##_is_ack(&handle->block)) {                                     \
-      /* This block is just an ACKnowledge block. Mark the internal ACK-Stack, \
-       * so this block does not get sent again. */                             \
+      /* This block is just an ACKnowledge block. Mark the internal            \
+       * ACK-Stack, so this block does not get sent again. */                  \
       return sPREFIX##_ack_stack_remove(&handle->ack_stack, &handle->block);   \
     }                                                                          \
     if(sPREFIX##_is_tinyPacket(&handle->block)) {                              \
@@ -153,9 +261,9 @@ extern "C"
         }                                                                      \
         handle->byte_counter = 0;                                              \
       } else if(handle->byte_counter == iBLOCK_SIZE) {                         \
-        /* This seems like an overlong message. It should still be able to be  \
-         * parsed, if receiving is stopped now. This behaviour can be useful   \
-         * in environments like SPI or with harmful inputs. */                 \
+        /* This seems like an overlong message. It should still be able to     \
+         * be parsed, if receiving is stopped now. This behaviour can be       \
+         * useful in environments like SPI or with harmful inputs. */          \
         if(status == LRT_RCORE_OK) {                                           \
           status = sPREFIX##_handle_complete_block(handle);                    \
         }                                                                      \

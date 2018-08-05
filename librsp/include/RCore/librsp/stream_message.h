@@ -16,18 +16,18 @@ extern "C"
 #define LRT_LIBRSP_BYTESWAP32_IF_NEEDED(VALUE)
 #endif
 
-#define LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(                 \
-  sPREFIX, sNAME, iDATA_INDEX, iDATA_POS)                        \
-  bool sPREFIX##_is_##sNAME(sPREFIX##_block_t* block)            \
-  {                                                              \
-    return block->data[iDATA_INDEX] & iDATA_POS;                 \
-  }                                                              \
-  void sPREFIX##_set_##sNAME(sPREFIX##_block_t* block, bool val) \
-  {                                                              \
-    if(val)                                                      \
-      block->data[iDATA_INDEX] |= iDATA_POS;                     \
-    else                                                         \
-      block->data[iDATA_INDEX] &= ~(iDATA_POS);                  \
+#define LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(                        \
+  sPREFIX, sNAME, iDATA_INDEX, iDATA_POS)                               \
+  inline bool sPREFIX##_is_##sNAME(sPREFIX##_block_t* block)            \
+  {                                                                     \
+    return block->data[iDATA_INDEX] & iDATA_POS;                        \
+  }                                                                     \
+  inline void sPREFIX##_set_##sNAME(sPREFIX##_block_t* block, bool val) \
+  {                                                                     \
+    if(val)                                                             \
+      block->data[iDATA_INDEX] |= iDATA_POS;                            \
+    else                                                                \
+      block->data[iDATA_INDEX] &= ~(iDATA_POS);                         \
   }
 
 #include <assert.h>
@@ -48,48 +48,49 @@ extern "C"
     sPREFIX, sStart, 0u, LRT_LIBRSP_STREAM_START)                              \
   LRT_LIBRSP_STREAM_MESSAGE_BIT_FUNCTIONS(                                     \
     sPREFIX, sEnd, 0u, LRT_LIBRSP_STREAM_END)                                  \
-  uint8_t sPREFIX##_get_packetTypeBits(sPREFIX##_block_t* block)               \
+  inline uint8_t sPREFIX##_get_packetTypeBits(sPREFIX##_block_t* block)        \
   {                                                                            \
     return block->data[0] & 0b01111000u;                                       \
   }                                                                            \
-  uint8_t sPREFIX##_get_packetStreamBits(sPREFIX##_block_t* block)             \
+  inline uint8_t sPREFIX##_get_packetStreamBits(sPREFIX##_block_t* block)      \
   {                                                                            \
     return block->data[0] & 0b00011000u;                                       \
   }                                                                            \
-  size_t sPREFIX##_get_data_size(sPREFIX##_block_t* block)                     \
+  inline size_t sPREFIX##_get_data_size(sPREFIX##_block_t* block)              \
   {                                                                            \
     return iDATA_SIZE - 3 - (sPREFIX##_is_reliable(block) ? 1 : 0);            \
   }                                                                            \
-  void sPREFIX##_set_data(sPREFIX##_block_t* block, size_t pos, uint8_t val)   \
+  inline void sPREFIX##_set_data(                                              \
+    sPREFIX##_block_t* block, size_t pos, uint8_t val)                         \
   {                                                                            \
     assert(pos < (iDATA_SIZE) - (sPREFIX##_is_reliable(block) ? 4 : 3));       \
     sPREFIX##_set_block_data(                                                  \
       block, pos + (sPREFIX##_is_reliable(block) ? 4 : 3), val);               \
   }                                                                            \
-  uint8_t sPREFIX##_get_data(sPREFIX##_block_t* block, size_t pos)             \
+  inline uint8_t sPREFIX##_get_data(sPREFIX##_block_t* block, size_t pos)      \
   {                                                                            \
     assert(pos < (iDATA_SIZE) - (sPREFIX##_is_reliable(block) ? 4 : 3));       \
     return sPREFIX##_get_block_data(                                           \
       block, pos + (sPREFIX##_is_reliable(block) ? 4 : 3));                    \
   }                                                                            \
-  bool sPREFIX##_is_iPacket(sPREFIX##_block_t* block)                          \
+  inline bool sPREFIX##_is_iPacket(sPREFIX##_block_t* block)                   \
   {                                                                            \
     return !(sPREFIX##_is_sStart(block)) && !(sPREFIX##_is_sEnd(block));       \
   }                                                                            \
-  bool sPREFIX##_is_tinyPacket(sPREFIX##_block_t* block)                       \
+  inline bool sPREFIX##_is_tinyPacket(sPREFIX##_block_t* block)                \
   {                                                                            \
     return sPREFIX##_is_sStart(block) && sPREFIX##_is_sEnd(block);             \
   }                                                                            \
-  uint8_t sPREFIX##_get_sequence_number(sPREFIX##_block_t* block)              \
+  inline uint8_t sPREFIX##_get_sequence_number(sPREFIX##_block_t* block)       \
   {                                                                            \
     assert(sPREFIX##_is_reliable(block));                                      \
     return ((sPREFIX##_get_block_data(block, 0) & 0x0Fu) << 2u) |              \
            ((sPREFIX##_get_block_data(block, 1) & 0b11000000u) >> 6u);         \
   }                                                                            \
-  void sPREFIX##_set_sequence_number(sPREFIX##_block_t* block, uint8_t seq)    \
+  inline void sPREFIX##_set_sequence_number(sPREFIX##_block_t* block,          \
+                                            uint8_t seq)                       \
   {                                                                            \
     assert(sPREFIX##_is_reliable(block));                                      \
-    assert(seq <= 0b00111111);                                                 \
     sPREFIX##_set_block_data(block,                                            \
                              0,                                                \
                              (sPREFIX##_get_block_data(block, 0) & 0xF0u) |    \
@@ -100,13 +101,13 @@ extern "C"
       (sPREFIX##_get_block_data(block, 1) & 0b00111111u) |                     \
         ((seq & 0b00000011u) << 6u));                                          \
   }                                                                            \
-  uint8_t sPREFIX##_get_next_sequence_number(sPREFIX##_block_t* block)         \
+  inline uint8_t sPREFIX##_get_next_sequence_number(sPREFIX##_block_t* block)  \
   {                                                                            \
     assert(sPREFIX##_is_reliable(block));                                      \
     return (sPREFIX##_get_block_data(block, 1) & 0b00111111u);                 \
   }                                                                            \
-  void sPREFIX##_set_next_sequence_number(sPREFIX##_block_t* block,            \
-                                          uint8_t seq)                         \
+  inline void sPREFIX##_set_next_sequence_number(sPREFIX##_block_t* block,     \
+                                                 uint8_t seq)                  \
   {                                                                            \
     assert(sPREFIX##_is_reliable(block));                                      \
     sPREFIX##_set_block_data(                                                  \
@@ -115,14 +116,15 @@ extern "C"
       (sPREFIX##_get_block_data(block, 1) & 0b11000000u) |                     \
         (seq & 0b00111111u));                                                  \
   }                                                                            \
-  uint8_t sPREFIX##_get_litecomm_type(sPREFIX##_block_t* block)                \
+  inline uint8_t sPREFIX##_get_litecomm_type(sPREFIX##_block_t* block)         \
   {                                                                            \
     return ((sPREFIX##_get_block_data(                                         \
                block, sPREFIX##_is_reliable(block) ? 2u : 1u) &                \
              0xF0u) >>                                                         \
             4u);                                                               \
   }                                                                            \
-  void sPREFIX##_set_litecomm_type(sPREFIX##_block_t* block, uint8_t type)     \
+  inline void sPREFIX##_set_litecomm_type(sPREFIX##_block_t* block,            \
+                                          uint8_t type)                        \
   {                                                                            \
     assert(type <= 0x0F);                                                      \
     size_t index = sPREFIX##_is_reliable(block) ? 2 : 1;                       \
@@ -132,7 +134,7 @@ extern "C"
       (sPREFIX##_get_block_data(block, index) & 0x0Fu) |                       \
         ((type & 0x0Fu) << 4u));                                               \
   }                                                                            \
-  uint16_t sPREFIX##_get_litecomm_property(sPREFIX##_block_t* block)           \
+  inline uint16_t sPREFIX##_get_litecomm_property(sPREFIX##_block_t* block)    \
   {                                                                            \
     uint16_t property = 0;                                                     \
     size_t index = sPREFIX##_is_reliable(block) ? 2 : 1;                       \
@@ -142,7 +144,8 @@ extern "C"
     LRT_LIBRSP_BYTESWAP16_IF_NEEDED(property);                                 \
     return property;                                                           \
   }                                                                            \
-  void sPREFIX##_set_litecomm_property(sPREFIX##_block_t* block, uint16_t val) \
+  inline void sPREFIX##_set_litecomm_property(sPREFIX##_block_t* block,        \
+                                              uint16_t val)                    \
   {                                                                            \
     LRT_LIBRSP_BYTESWAP16_IF_NEEDED(val);                                      \
     size_t index = sPREFIX##_is_reliable(block) ? 2 : 1;                       \
@@ -153,20 +156,25 @@ extern "C"
         ((uint8_t)(val >> 8u) & 0x0Fu));                                       \
     sPREFIX##_set_block_data(block, index + 1, val & 0xFFu);                   \
   }                                                                            \
-  size_t sPREFIX##_insert_data(sPREFIX##_block_t* block,                       \
-                               const uint8_t* data,                            \
-                               size_t length,                                  \
-                               size_t offset)                                  \
+  inline size_t sPREFIX##_insert_data(sPREFIX##_block_t* block,                \
+                                      const uint8_t* data,                     \
+                                      size_t length,                           \
+                                      size_t offset)                           \
   {                                                                            \
     /* Try to encode as much of the given data as possible and return how much \
      * is left. This function completely disregards any other message data and \
      * only handles the inner message data. */                                 \
-    for(size_t i = 0; length > 0 && i < iDATA_SIZE; ++i, --length, ++offset) { \
+    for(size_t i = 0;                                                          \
+        length - offset - 1 > 0 && i < sPREFIX##_get_data_size(block);         \
+        ++i, ++offset) {                                                       \
       sPREFIX##_set_data(block, i, data[offset]);                              \
+    }                                                                          \
+    if(length < sPREFIX##_get_data_size(block)) {                              \
+      block->significant_bytes = (length % 8) * 8;                             \
     }                                                                          \
     return offset;                                                             \
   }                                                                            \
-  void sPREFIX##_read_data(                                                    \
+  inline void sPREFIX##_read_data(                                             \
     sPREFIX##_block_t* block, uint8_t* target, size_t length)                  \
   {                                                                            \
     for(size_t i = 0; i < iDATA_SIZE && i < length; ++i)                       \

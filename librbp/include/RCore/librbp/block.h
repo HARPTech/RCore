@@ -19,9 +19,9 @@ extern "C"
 #define LRT_LIBRBP_BLOCK_STRUCT_DEBUG_MEMBERS(sPREFIX, iBLOCK_SIZE) \
   char out_str[(iBLOCK_SIZE / 8) * (iBLOCK_SIZE * 8 + 1 + 8)];
 #define LRT_LIBRBP_BLOCK_STRUCT_DEBUG_FUNCTIONS(sPREFIX, iBLOCK_SIZE) \
-  const char* sPREFIX##_to_str(sPREFIX##_block_t* block)              \
+  inline const char* sPREFIX##_to_str(sPREFIX##_block_t* block)       \
   {                                                                   \
-    for(size_t i = 0; i < iBLOCK_SIZE; ++i) {                         \
+    for(size_t i = 0; i < block->significant_bytes; ++i) {            \
       for(size_t j = 0; j < 9u; ++j) {                                \
         if(j < 8)                                                     \
           block->out_str[i * 9u + j] =                                \
@@ -36,7 +36,7 @@ extern "C"
 #else
 #define LRT_LIBRBP_BLOCK_STRUCT_DEBUG_MEMBERS(sPREFIX, iBLOCK_SIZE)
 #define LRT_LIBRBP_BLOCK_STRUCT_DEBUG_FUNCTIONS(sPREFIX, iBLOCK_SIZE) \
-  const char* sPREFIX##_to_str(sPREFIX##_block_t* block) { return '\0'; }
+  inline const char* sPREFIX##_to_str(sPREFIX##_block_t* block) { return "\0"; }
 #endif
 
 #define LRT_LIBRBP_BLOCK_STRUCT(sPREFIX, iBLOCK_SIZE, INTERNAL)             \
@@ -47,7 +47,7 @@ extern "C"
     LRT_LIBRBP_BLOCK_STRUCT_DEBUG_MEMBERS(sPREFIX, iBLOCK_SIZE)             \
   } sPREFIX##_block_t;                                                      \
                                                                             \
-  void sPREFIX##_init_block(sPREFIX##_block_t* block)                       \
+  inline void sPREFIX##_init_block(sPREFIX##_block_t* block)                \
   {                                                                         \
     assert(iBLOCK_SIZE % 8 == 0);                                           \
     for(size_t i = 0; i < iBLOCK_SIZE; ++i) {                               \
@@ -55,7 +55,8 @@ extern "C"
     }                                                                       \
     block->significant_bytes = iBLOCK_SIZE;                                 \
   }                                                                         \
-  uint8_t sPREFIX##_get_block_data(sPREFIX##_block_t* block, size_t pos)    \
+  inline uint8_t sPREFIX##_get_block_data(sPREFIX##_block_t* block,         \
+                                          size_t pos)                       \
   {                                                                         \
     assert(pos < iBLOCK_SIZE - 1);                                          \
     return ((block->data[pos + (pos / 7U)] & (0xFFU >> ((pos % 7U) + 1U)))  \
@@ -65,7 +66,7 @@ extern "C"
              0b01111111U) >>                                                \
             (7U - ((pos % 7U) + 1U)));                                      \
   }                                                                         \
-  void sPREFIX##_set_block_data(                                            \
+  inline void sPREFIX##_set_block_data(                                     \
     sPREFIX##_block_t* block, size_t pos, uint8_t val)                      \
   {                                                                         \
     assert(pos < iBLOCK_SIZE - 1u);                                         \
@@ -77,7 +78,7 @@ extern "C"
       (block->data[pos + 1U + (pos / 7U)] & (0xFFU >> ((pos % 7U) + 2U))) | \
       ((uint8_t)(val << (7u - ((pos % 7u) + 1u))) & 0b01111111u);           \
   }                                                                         \
-  bool sPREFIX##_is_block_valid(sPREFIX##_block_t* block)                   \
+  inline bool sPREFIX##_is_block_valid(sPREFIX##_block_t* block)            \
   {                                                                         \
     if((block->data[0] & LRT_LIBRBP_BLOCK_START_BIT) == 0) {                \
       return false;                                                         \

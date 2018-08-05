@@ -6,14 +6,14 @@
  * type and property of a LiteComm value.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 #include <klib/khash.h>
 
@@ -45,5 +45,9 @@ extern "C"
              1,                                         \
              kh_int_hash_func,                          \
              kh_int_hash_equal);
+
+#ifdef __cplusplus
+}// closing brace for extern "C"
+#endif
 
 #endif

@@ -3,12 +3,16 @@
 
 #include "events.h"
 #include "internal/hashtable.h"
-#include <stddef.h>
+#include <klib/kstring.h>
 
 #ifdef __cplusplus
+#include <memory>
+
 extern "C"
 {
 #endif
+
+#include <stddef.h>
 
 #define LRT_RCORE_STACK_CROSSOVER(                                           \
   sPREFIX1, sPREFIX2, iBLOCKSIZE1, iBLOCKSIZE2)                              \
@@ -29,10 +33,33 @@ extern "C"
 
   typedef struct lrt_rcore_transmit_buffer_t lrt_rcore_transmit_buffer_t;
 
+  typedef struct lrt_rcore_transmit_buffer_entry_t
+  {
+    kstring_t* data;
+    uint8_t type;
+    uint16_t property;
+    uint8_t seq_number;
+    bool reliable;
+    lrt_rcore_transmit_buffer_t* origin;
+    uint8_t liteCommMessageType;
+    size_t transmit_offset;
+  } lrt_rcore_transmit_buffer_entry_t;
+
+  inline bool lrt_rcore_transmit_buffer_entry_transmit_finished(
+    lrt_rcore_transmit_buffer_entry_t* entry)
+  {
+    return entry->data->l - entry->transmit_offset - 1 == 0;
+  }
+
   typedef lrt_rcore_event_t (*lrt_rcore_transmit_buffer_finished_cb)(
-    const uint8_t* bytes,
-    size_t length,
+    lrt_rcore_transmit_buffer_entry_t* entry,
     void* userdata);
+  typedef lrt_rcore_event_t (*lrt_rcore_transmit_buffer_data_ready_cb)(
+    lrt_rcore_transmit_buffer_entry_t* entry,
+    void* userdata);
+
+  lrt_rcore_transmit_buffer_t* lrt_rcore_transmit_buffer_init();
+  void lrt_rcore_transmit_buffer_free(lrt_rcore_transmit_buffer_t* tr);
 
   void lrt_rcore_transmit_buffer_reserve(lrt_rcore_transmit_buffer_t* handle,
                                          uint8_t type,
@@ -44,14 +71,33 @@ extern "C"
     uint8_t type,
     uint16_t property,
     uint8_t streamBits,
-    uint8_t byte);
+    uint8_t byte,
+    bool reliable);
+
+  void lrt_rcore_transmit_buffer_free_send_slot(
+    lrt_rcore_transmit_buffer_t* handle,
+    lrt_rcore_transmit_buffer_entry_t* entry);
+
+  void lrt_rcore_transmit_buffer_send_ctrl(lrt_rcore_transmit_buffer_t* handle,
+                                           uint8_t type,
+                                           uint16_t property,
+                                           uint8_t liteCommMessageType,
+                                           bool reliable);
+
+  void lrt_rcore_transmit_buffer_send_data(lrt_rcore_transmit_buffer_t* handle,
+                                           uint8_t type,
+                                           uint16_t property,
+                                           const uint8_t* data,
+                                           size_t length,
+                                           bool reliable);
 
 #define LRT_RCORE_TRANSMITBUFFER_SEND_TYPE(sTYPE, tTYPE) \
   void lrt_rcore_transmit_buffer_send_##sTYPE(           \
     lrt_rcore_transmit_buffer_t* handle,                 \
     uint8_t type,                                        \
     uint16_t property,                                   \
-    tTYPE value);
+    tTYPE value,                                         \
+    bool reliable);
 
   LRT_RCORE_TRANSMITBUFFER_SEND_TYPE(Bool, bool)
   LRT_RCORE_TRANSMITBUFFER_SEND_TYPE(Uint8, uint8_t)
@@ -69,9 +115,28 @@ extern "C"
     lrt_rcore_transmit_buffer_t* handle,
     lrt_rcore_transmit_buffer_finished_cb cb,
     void* userdata);
+  void lrt_rcore_transmit_buffer_set_data_ready_cb(
+    lrt_rcore_transmit_buffer_t* handle,
+    lrt_rcore_transmit_buffer_data_ready_cb cb,
+    void* userdata);
 
 #ifdef __cplusplus
 }// closing brace for extern "C"
+
+namespace lrt {
+namespace RCore {
+struct TransmitBufferPtrDeleter
+{
+  void operator()(lrt_rcore_transmit_buffer_t* buffer)
+  {
+    lrt_rcore_transmit_buffer_free(buffer);
+  }
+};
+
+using TransmitBufferPtr =
+  std::unique_ptr<lrt_rcore_transmit_buffer_t, TransmitBufferPtrDeleter>;
+}
+}
 #endif
 
 #endif

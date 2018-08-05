@@ -8,6 +8,8 @@ set(LIBRCORE_SRCS
 add_library(rcore STATIC
     ${LIBRCORE_SRCS})
 
+set_property(TARGET rcore PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 set_property(TARGET rcore PROPERTY C_STANDARD 11)
 
 target_include_directories(rcore

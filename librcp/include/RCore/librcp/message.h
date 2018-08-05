@@ -100,11 +100,11 @@ extern "C"
     if(counter < 0) {                                                    \
       counter = sizeof(tTYPE);                                           \
     }                                                                    \
-    lrt_librcp_union_##sTYPENAME.val = data;                                \
+    lrt_librcp_union_##sTYPENAME.val = data;                             \
     for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block); \
         ++i, --counter) {                                                \
       sPREFIX##_set_data(                                                \
-        block, i, lrt_librcp_union_##sTYPENAME.bytes[counter - 1]);          \
+        block, i, lrt_librcp_union_##sTYPENAME.bytes[counter - 1]);      \
     }                                                                    \
     return counter;                                                      \
   }                                                                      \
@@ -114,23 +114,49 @@ extern "C"
     if(counter < 0) {                                                    \
       counter = sizeof(tTYPE);                                           \
       *data = 0;                                                         \
-      lrt_librcp_union_##sTYPENAME.val = 0;                                 \
+      lrt_librcp_union_##sTYPENAME.val = 0;                              \
       sPREFIX##_set_sStart(block, true);                                 \
     } else {                                                             \
-      lrt_librcp_union_##sTYPENAME.val = *data;                             \
+      lrt_librcp_union_##sTYPENAME.val = *data;                          \
     }                                                                    \
     for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block); \
         ++i, --counter) {                                                \
-      lrt_librcp_union_##sTYPENAME.bytes[counter - 1] =                      \
+      lrt_librcp_union_##sTYPENAME.bytes[counter - 1] =                  \
         sPREFIX##_get_data(block, i);                                    \
     }                                                                    \
-    *data = lrt_librcp_union_##sTYPENAME.val;                               \
+    *data = lrt_librcp_union_##sTYPENAME.val;                            \
     if(counter == 0)                                                     \
       sPREFIX##_set_sEnd(block, true);                                   \
     return counter;                                                      \
   }
 
 #endif
+
+#define LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, sTYPENAME, tTYPE) \
+  int16_t sPREFIX##_set_data_##sTYPENAME(                               \
+    sPREFIX##_block_t* block, tTYPE data, int16_t counter);             \
+  int16_t sPREFIX##_get_data_##sTYPENAME(                               \
+    sPREFIX##_block_t* block, tTYPE* data, int16_t counter);
+
+#define LRT_LIBRCP_TYPES_DEFINITIONS(sPREFIX)                               \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Bool, bool)                 \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Uint8, uint8_t)             \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Int8, int8_t)               \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Uint16, uint16_t)           \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Int16, int16_t)             \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Uint32, uint32_t)           \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Int32, int32_t)             \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Uint64, uint64_t)           \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Int64, int64_t)             \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Float, float)               \
+  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Double, double)             \
+  lrt_rcp_message_type_t sPREFIX##_get_litecomm_message_type(               \
+    sPREFIX##_block_t* block);                                              \
+  void sPREFIX##_set_litecomm_message_type(sPREFIX##_block_t* block,        \
+                                           lrt_rcp_message_type_t type);    \
+  uint8_t sPREFIX##_get_litecomm_sequence_number(sPREFIX##_block_t* block); \
+  void sPREFIX##_set_litecomm_sequence_number(sPREFIX##_block_t* block,     \
+                                              uint8_t seq);
 
 #define LRT_LIBRCP_TYPES(sPREFIX)                                          \
   LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Bool, bool)                           \

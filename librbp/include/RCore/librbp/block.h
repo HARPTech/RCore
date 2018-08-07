@@ -32,11 +32,16 @@ extern "C"
     }                                                                 \
     block->out_str[iBLOCK_SIZE * 9u] = '\0';                          \
     return block->out_str;                                            \
-  }
+  }                                                                   \
+  const char* sPREFIX##_to_str(sPREFIX##_block_t* block);
 #else
 #define LRT_LIBRBP_BLOCK_STRUCT_DEBUG_MEMBERS(sPREFIX, iBLOCK_SIZE)
 #define LRT_LIBRBP_BLOCK_STRUCT_DEBUG_FUNCTIONS(sPREFIX, iBLOCK_SIZE) \
-  inline const char* sPREFIX##_to_str(sPREFIX##_block_t* block) { return "\0"; }
+  inline const char* sPREFIX##_to_str(sPREFIX##_block_t* block)       \
+  {                                                                   \
+    return "\0";                                                      \
+  }                                                                   \
+  const char* sPREFIX##_to_str(sPREFIX##_block_t* block);
 #endif
 
 #define LRT_LIBRBP_BLOCK_STRUCT(sPREFIX, iBLOCK_SIZE, INTERNAL)             \
@@ -90,6 +95,12 @@ extern "C"
     }                                                                       \
     return true;                                                            \
   }                                                                         \
+                                                                            \
+  void sPREFIX##_init_block(sPREFIX##_block_t* block);                      \
+  uint8_t sPREFIX##_get_block_data(sPREFIX##_block_t* block, size_t pos);   \
+  void sPREFIX##_set_block_data(                                            \
+    sPREFIX##_block_t* block, size_t pos, uint8_t val);                     \
+  bool sPREFIX##_is_block_valid(sPREFIX##_block_t* block);                  \
   LRT_LIBRBP_BLOCK_STRUCT_DEBUG_FUNCTIONS(sPREFIX, iBLOCK_SIZE)             \
   INTERNAL(sPREFIX, (iBLOCK_SIZE - (iBLOCK_SIZE / 8u)))
 

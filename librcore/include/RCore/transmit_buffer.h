@@ -3,6 +3,7 @@
 
 #include "events.h"
 #include "internal/hashtable.h"
+#include <RCore/librcp/message.h>
 #include <klib/kstring.h>
 
 #ifdef __cplusplus
@@ -38,17 +39,17 @@ extern "C"
     kstring_t* data;
     uint8_t type;
     uint16_t property;
-    uint8_t seq_number;
+    uint16_t seq_number;
     bool reliable;
-    lrt_rcore_transmit_buffer_t* origin;
-    uint8_t liteCommMessageType;
     size_t transmit_offset;
+    lrt_rcp_message_type_t message_type;
+    lrt_rcore_transmit_buffer_t* origin;
   } lrt_rcore_transmit_buffer_entry_t;
 
   inline bool lrt_rcore_transmit_buffer_entry_transmit_finished(
     lrt_rcore_transmit_buffer_entry_t* entry)
   {
-    return entry->data->l - entry->transmit_offset - 1 == 0;
+    return entry->transmit_offset >= entry->data->l;
   }
 
   typedef lrt_rcore_event_t (*lrt_rcore_transmit_buffer_finished_cb)(
@@ -72,7 +73,9 @@ extern "C"
     uint16_t property,
     uint8_t streamBits,
     uint8_t byte,
-    bool reliable);
+    lrt_rcp_message_type_t message_type,
+    bool reliable,
+    uint16_t seq_number);
 
   void lrt_rcore_transmit_buffer_free_send_slot(
     lrt_rcore_transmit_buffer_t* handle,

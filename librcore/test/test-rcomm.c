@@ -399,7 +399,6 @@ Test(rcore, big_reliable_reversed, .init = setup, .fini = teardown)
     // Do the sending manually to circumvent automatic sequence number
     // assignments.
     comm_set_sequence_number(&blocks[i], 3 - i);
-    comm_set_next_sequence_number(&blocks[i], 3 - i + 1);
     comm_ack_stack_insert(&source.ack_stack, &blocks[i]);
     source.transmit(blocks[i].data, source.transmit_userdata, iBLOCKSIZE);
   }
@@ -463,7 +462,6 @@ Test(rcore, big_reliable_mixed, .init = setup, .fini = teardown)
     // Do the sending manually to circumvent automatic sequence number
     // assignments.
     comm_set_sequence_number(&blocks[i], indices[i]);
-    comm_set_next_sequence_number(&blocks[i], indices[i] + 1);
     comm_ack_stack_insert(&source.ack_stack, &blocks[i]);
     source.transmit(blocks[i].data, source.transmit_userdata, iBLOCKSIZE);
   }
@@ -530,8 +528,6 @@ Test(rcore,
     // Do the sending manually to circumvent automatic sequence number
     // assignments.
     comm_set_sequence_number(&blocks[i], (indices[i] + 62) & 0b00111111u);
-    comm_set_next_sequence_number(&blocks[i],
-                                  (indices[i] + 1 + 62) & 0b00111111u);
     comm_ack_stack_insert(&source.ack_stack, &blocks[i]);
     source.transmit(blocks[i].data, source.transmit_userdata, iBLOCKSIZE);
   }

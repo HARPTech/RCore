@@ -85,7 +85,7 @@ get_enum_from_map(lrt_rcore_subscription_map_t* map,
   uint8_t intVal = kh_val(map->map, it);
 
   enum hash_value_enum val =
-    (enum hash_value_enum)((intVal >> (subscriber * 2u)) & 0b00000011);
+    (enum hash_value_enum)((intVal >> (subscriber * 2u)) & 0b00000011u);
   return val;
 }
 static lrt_rcore_event_t
@@ -220,16 +220,16 @@ lrt_rcore_subscription_map_get_subscribers(lrt_rcore_subscription_map_t* map,
         subscribers |= 1 << i;
         break;
       case PROPERTY_SINGLE_USE_SUBSCRIPTION: {
-        lrt_rcore_event_t status = set_enum_to_map(
-          map, type, property, i, PROPERTY_UNSUBSCRIBED);
+        lrt_rcore_event_t status =
+          set_enum_to_map(map, type, property, i, PROPERTY_UNSUBSCRIBED);
         assert(status == LRT_RCORE_OK);
         subscribers |= 1 << i;
         break;
       }
       default: {
         // The value must have been corrupted, reset it to 0.
-        lrt_rcore_event_t status = set_enum_to_map(
-          map, type, property, i, PROPERTY_UNSUBSCRIBED);
+        lrt_rcore_event_t status =
+          set_enum_to_map(map, type, property, i, PROPERTY_UNSUBSCRIBED);
         assert(status == LRT_RCORE_OK);
         break;
       }

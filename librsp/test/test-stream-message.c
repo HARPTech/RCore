@@ -144,11 +144,6 @@ Test(stream_message, litecomm)
   // So setting data should also work from indices 0 to 2.
   test_data_various_contents(&block);
 
-  // If the package becomes unreliable, the data size becomes 4 because of the
-  // missing sequence numbers.
-  test_set_reliable(&block, false);
-  cr_assert_eq(test_get_data_size(&block), (iBLOCKSIZE - (iBLOCKSIZE / 8) - 3));
-
   // LiteComm should also work correctly when running on unreliable data.
   test_litecomm(&block);
 
@@ -163,14 +158,10 @@ Test(stream_message, litecomm)
   // too.
   test_set_reliable(&block, true);
   test_set_sequence_number(&block, 60);
-  test_set_next_sequence_number(&block, 61);
   cr_assert_eq(test_get_sequence_number(&block), 60);
-  cr_assert_eq(test_get_next_sequence_number(&block), 61);
-  cr_log_warn("Block with sequence numbers: %s", test_to_str(&block));
+  cr_log_warn("Block with sequence number: %s", test_to_str(&block));
   test_set_sequence_number(&block, 0);
-  test_set_next_sequence_number(&block, 1);
   cr_assert_eq(test_get_sequence_number(&block), 0);
-  cr_assert_eq(test_get_next_sequence_number(&block), 1);
 
   // LiteComm Types should be valid (for range [0,15])
   test_litecomm(&block);

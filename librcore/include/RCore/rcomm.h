@@ -81,16 +81,24 @@ extern "C"
     sPREFIX##_init_sequence_stack(&handle->sequence_stack);                    \
     handle->transmit_userdata = NULL;                                          \
     handle->accept_userdata = NULL;                                            \
+    handle->accept = NULL;                                                     \
+    handle->transmit = NULL;                                                   \
     handle->byte_counter = 0;                                                  \
   }                                                                            \
   sPREFIX##_handle_t* sPREFIX##_create()                                       \
   {                                                                            \
     sPREFIX##_handle_t* handle =                                               \
-      (sPREFIX##_handle_t*)malloc(sizeof(sPREFIX##_handle_t));                 \
-    sPREFIX##_init(handle);                                                    \
+      (sPREFIX##_handle_t*)calloc(1, sizeof(sPREFIX##_handle_t));              \
+    if(handle) {                                                               \
+      sPREFIX##_init(handle);                                                  \
+    }                                                                          \
     return handle;                                                             \
   }                                                                            \
-  void sPREFIX##_free(sPREFIX##_handle_t* handle) { free(handle); }            \
+  void sPREFIX##_free(sPREFIX##_handle_t* handle)                              \
+  {                                                                            \
+    assert(handle != NULL);                                                    \
+    free(handle);                                                              \
+  }                                                                            \
   void sPREFIX##_set_transmit_cb(                                              \
     sPREFIX##_handle_t* handle, sPREFIX##_transmit_data_cb cb, void* userdata) \
   {                                                                            \
@@ -113,6 +121,7 @@ extern "C"
     assert(handle != NULL);                                                    \
     assert(block != NULL);                                                     \
     assert(bytes % 8 == 0);                                                    \
+    assert(bytes <= iBLOCK_SIZE);                                              \
     assert(handle->transmit != NULL);                                          \
     lrt_rcore_event_t status = LRT_RCORE_OK;                                   \
     if(sPREFIX##_is_reliable(block)) {                                         \
@@ -146,21 +155,16 @@ extern "C"
                               entry->data->l,                                  \
                               entry->transmit_offset);                         \
       /* Set rest of block data fields. */                                     \
-      if(entry->reliable) {                                                    \
-        sPREFIX##_set_sequence_number(&handle->outgoing_block,                 \
-                                      entry->seq_number++);                    \
-        sPREFIX##_set_next_sequence_number(&handle->outgoing_block,            \
-                                           entry->seq_number);                 \
-      }                                                                        \
+      sPREFIX##_set_sequence_number(&handle->outgoing_block,                   \
+                                    entry->seq_number);                        \
       sPREFIX##_set_sEnd(                                                      \
         &handle->outgoing_block,                                               \
-        !lrt_rcore_transmit_buffer_entry_transmit_finished(entry));            \
+        lrt_rcore_transmit_buffer_entry_transmit_finished(entry));             \
       sPREFIX##_set_litecomm_type(&handle->outgoing_block, entry->type);       \
       sPREFIX##_set_litecomm_property(&handle->outgoing_block,                 \
                                       entry->property);                        \
-      if(lrt_rcore_transmit_buffer_entry_transmit_finished(entry)) {           \
-        sPREFIX##_set_sEnd(&handle->outgoing_block, true);                     \
-      }                                                                        \
+      sPREFIX##_set_litecomm_message_type(&handle->outgoing_block,             \
+                                          entry->message_type);                \
       status = sPREFIX##_send_block(handle,                                    \
                                     &handle->outgoing_block,                   \
                                     handle->outgoing_block.significant_bytes); \
@@ -177,14 +181,16 @@ extern "C"
     lrt_rcore_transmit_buffer_t* tb)                                           \
   {                                                                            \
     uint8_t packetTypeBits = sPREFIX##_get_packetTypeBits(block);              \
-    for(size_t i = 0; i < sPREFIX##_get_data_size(block) - 1; ++i) {           \
+    for(size_t i = 1; i - 1 < sPREFIX##_get_data_size(block) - 1; ++i) {       \
       lrt_rcore_transmit_buffer_receive_data_byte(                             \
         tb,                                                                    \
         sPREFIX##_get_litecomm_type(block),                                    \
         sPREFIX##_get_litecomm_property(block),                                \
         packetTypeBits& LRT_LIBRSP_STREAM_START,                               \
         sPREFIX##_get_data(block, i),                                          \
-        sPREFIX##_is_reliable(block));                                         \
+        sPREFIX##_get_litecomm_message_type(block),                            \
+        sPREFIX##_is_reliable(block),                                          \
+        sPREFIX##_get_sequence_number(block));                                 \
     }                                                                          \
     /* The last byte gets information about the state of sEnd. */              \
     lrt_rcore_transmit_buffer_receive_data_byte(                               \
@@ -193,7 +199,9 @@ extern "C"
       sPREFIX##_get_litecomm_property(block),                                  \
       packetTypeBits,                                                          \
       sPREFIX##_get_data(block, sPREFIX##_get_data_size(block) - 1),           \
-      sPREFIX##_is_reliable(block));                                           \
+      sPREFIX##_get_litecomm_message_type(block),                              \
+      sPREFIX##_is_reliable(block),                                            \
+      sPREFIX##_get_sequence_number(block));                                   \
     return LRT_RCORE_OK;                                                       \
   }                                                                            \
   lrt_rcore_event_t sPREFIX##_handle_complete_block(                           \
@@ -260,25 +268,29 @@ extern "C"
           }                                                                    \
         }                                                                      \
         handle->byte_counter = 0;                                              \
-      } else if(handle->byte_counter == iBLOCK_SIZE) {                         \
+      } else if(handle->byte_counter >= iBLOCK_SIZE) {                         \
         /* This seems like an overlong message. It should still be able to     \
          * be parsed, if receiving is stopped now. This behaviour can be       \
          * useful in environments like SPI or with harmful inputs. */          \
         if(status == LRT_RCORE_OK) {                                           \
+          handle->block.significant_bytes = handle->byte_counter;              \
           status = sPREFIX##_handle_complete_block(handle);                    \
         }                                                                      \
         handle->byte_counter = 0;                                              \
       }                                                                        \
       /* Write the received byte into the block. */                            \
+      assert(handle->byte_counter < iBLOCK_SIZE);                              \
+      assert(i < length);                                                      \
       handle->block.data[handle->byte_counter++] = data[i];                    \
     }                                                                          \
     /* Also handle finished blocks if there are no additional bytes. */        \
     if(handle->byte_counter > 0 && handle->byte_counter % 8 == 0) {            \
       if(status == LRT_RCORE_OK) {                                             \
+        handle->block.significant_bytes = handle->byte_counter;                \
         status = sPREFIX##_handle_complete_block(handle);                      \
       }                                                                        \
+      handle->byte_counter = 0;                                                \
     }                                                                          \
-    handle->byte_counter = 0;                                                  \
     return status;                                                             \
   }
 

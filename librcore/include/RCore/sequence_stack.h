@@ -43,13 +43,8 @@ extern "C"
   {                                                                            \
     sPREFIX##_block_t* left = (sPREFIX##_block_t*)left_void;                   \
     sPREFIX##_block_t* right = (sPREFIX##_block_t*)right_void;                 \
-    if(!sPREFIX##_is_reliable(right)) {                                        \
-      return -1;                                                               \
-    }                                                                          \
     uint8_t left_seq_num = sPREFIX##_get_sequence_number(left);                \
-    uint8_t left_next_seq_num = sPREFIX##_get_next_sequence_number(left);      \
     uint8_t right_seq_num = sPREFIX##_get_sequence_number(right);              \
-    uint8_t right_next_seq_num = sPREFIX##_get_next_sequence_number(right);    \
     /* This calculates the distance of the two blocks and tries to put them    \
      * into the correct order. */                                              \
     int8_t dist = left_seq_num - right_seq_num;                                \
@@ -119,7 +114,7 @@ extern "C"
     if(entry->expectedSequenceNumber ==                                        \
        sPREFIX##_get_sequence_number(block)) {                                 \
       entry->expectedSequenceNumber =                                          \
-        sPREFIX##_get_next_sequence_number(block);                             \
+        sPREFIX##_get_sequence_number(block) + 1;                              \
                                                                                \
       if(sPREFIX##_is_sEnd(block)) {                                           \
         /* If this packet is the end of the stream, the slot can directly be   \
@@ -147,8 +142,13 @@ extern "C"
       if(entry->stack_counter == iSTACK_DEPTH) {                               \
         return LRT_RCORE_STACK_DEPTH_EXHAUSTED;                                \
       }                                                                        \
-      memcpy(                                                                  \
-        entry->blocks[entry->stack_counter].data, block->data, iBLOCK_SIZE);   \
+      assert(block->significant_bytes <= iBLOCK_SIZE &&                        \
+             block->significant_bytes > 0);                                    \
+      memcpy(entry->blocks[entry->stack_counter].data,                         \
+             block->data,                                                      \
+             block->significant_bytes);                                        \
+      entry->blocks[entry->stack_counter].significant_bytes =                  \
+        block->significant_bytes;                                              \
       ++entry->stack_counter;                                                  \
       qsort(entry->blocks,                                                     \
             entry->stack_counter,                                              \
@@ -165,8 +165,8 @@ extern "C"
         }                                                                      \
         if(sPREFIX##_get_sequence_number(&entry->blocks[i]) ==                 \
            last_sequence_number) {                                             \
-          memmove(&entry->blocks[i - 1],                                       \
-                  &entry->blocks[i],                                           \
+          memmove(entry->blocks + i - 1,                                       \
+                  entry->blocks + i,                                           \
                   (entry->stack_counter - i) * sizeof(sPREFIX##_block_t));     \
           --entry->stack_counter;                                              \
         }                                                                      \
@@ -180,7 +180,7 @@ extern "C"
             sPREFIX##_get_sequence_number(&entry->blocks[0])) {                \
       tmp_block = &entry->blocks[0];                                           \
       entry->expectedSequenceNumber =                                          \
-        sPREFIX##_get_next_sequence_number(tmp_block);                         \
+        sPREFIX##_get_sequence_number(tmp_block) + 1;                          \
       acceptor(tmp_block, acceptor_userdata);                                  \
                                                                                \
       if(sPREFIX##_is_reliable(tmp_block)) {                                   \
@@ -201,7 +201,7 @@ extern "C"
       /* Move remaining blocks to the front, beginning at the 1st element up   \
        * to the new value of stack_counter. */                                 \
       memmove(entry->blocks,                                                   \
-              &entry->blocks[1],                                               \
+              entry->blocks + 1,                                               \
               entry->stack_counter * sizeof(sPREFIX##_block_t));               \
     }                                                                          \
     return LRT_RCORE_OK;                                                       \

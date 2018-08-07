@@ -64,8 +64,9 @@ extern "C"
       return LRT_RCORE_ACK_STACK_FULL;                                       \
     }                                                                        \
     /* Save the block this slot. */                                          \
-    entry->sequence_number = sPREFIX##_get_sequence_number(block);           \
-    memcpy(&entry->block.data, block->data, iBLOCK_SIZE);                    \
+    assert(block->significant_bytes <= iBLOCK_SIZE);                         \
+    memcpy(entry->block.data, block->data, block->significant_bytes);       \
+    entry->block.significant_bytes = block->significant_bytes;               \
                                                                              \
     return LRT_RCORE_OK;                                                     \
   }                                                                          \

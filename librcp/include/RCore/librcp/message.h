@@ -9,6 +9,7 @@ extern "C"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <threads.h>
 
   /* Encodes the message type. The rest of the bits is held free for an inner
    * sequence number for dropping old messages in fast paced environments (many
@@ -27,14 +28,15 @@ extern "C"
    * -----------------------------------------------------------------
    */
 
-#define LRT_LIBRCP_CONVERSION_UNION(sTYPENAME, tTYPE)                   \
-  union lrt_librcp_##sTYPENAME##_t                                      \
-  {                                                                     \
-    tTYPE val;                                                          \
-    uint8_t bytes[sizeof(tTYPE)];                                       \
-  };                                                                    \
-  static union lrt_librcp_##sTYPENAME##_t lrt_librcp_union_##sTYPENAME; \
-  const uint8_t* lrt_librcp_##sTYPENAME##_to_data(const tTYPE val);     \
+#define LRT_LIBRCP_CONVERSION_UNION(sTYPENAME, tTYPE)               \
+  union lrt_librcp_##sTYPENAME##_t                                  \
+  {                                                                 \
+    tTYPE val;                                                      \
+    uint8_t bytes[sizeof(tTYPE)];                                   \
+  };                                                                \
+  static thread_local union lrt_librcp_##sTYPENAME##_t              \
+    lrt_librcp_union_##sTYPENAME;                                   \
+  const uint8_t* lrt_librcp_##sTYPENAME##_to_data(const tTYPE val); \
   tTYPE lrt_librcp_##sTYPENAME##_from_data(const uint8_t* data, size_t length);
 
   LRT_LIBRCP_CONVERSION_UNION(Bool, bool)

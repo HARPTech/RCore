@@ -12,12 +12,19 @@ LRT_LIBRCORE_HASHTABLE_INIT(lrt_rcore_transmit_buffer_hashmap,
 static void
 free_kstring(kstring_t* str)
 {
-  free(str->s);
+  if(str != NULL) {
+    free(str->s);
+    str = NULL;
+  }
 }
 
 KMEMPOOL_INIT(lrt_rcore_transmit_buffer_string_mempool,
               kstring_t,
               free_kstring);
+
+bool
+lrt_rcore_transmit_buffer_entry_transmit_finished(
+  lrt_rcore_transmit_buffer_entry_t* entry);
 
 typedef struct lrt_rcore_transmit_buffer_t
 {
@@ -44,12 +51,36 @@ lrt_rcore_transmit_buffer_init()
 
   return tr;
 }
+static void
+free_hashmap_entry(kmp_lrt_rcore_transmit_buffer_string_mempool_t* pool,
+                   lrt_rcore_transmit_buffer_entry_t* entry)
+{
+  kmp_free_lrt_rcore_transmit_buffer_string_mempool(pool, entry->data);
+  entry->data = NULL;
+}
+static void
+free_hashmap(kmp_lrt_rcore_transmit_buffer_string_mempool_t* pool,
+             kh_lrt_rcore_transmit_buffer_hashmap_t* hashmap)
+{
+  // Delete all entries.
+  khiter_t k;
+  for(k = kh_begin(hashmap); k != kh_end(hashmap); ++k) {
+    if(kh_exist(hashmap, k)) {
+      free_hashmap_entry(pool, &kh_value(hashmap, k));
+    }
+  }
+  kh_destroy_lrt_rcore_transmit_buffer_hashmap(hashmap);
+}
+
 void
 lrt_rcore_transmit_buffer_free(lrt_rcore_transmit_buffer_t* tr)
 {
-  kh_destroy_lrt_rcore_transmit_buffer_hashmap(tr->incoming);
-  kh_destroy_lrt_rcore_transmit_buffer_hashmap(tr->outgoing);
+  free_hashmap(tr->memory_pool, tr->incoming);
+  tr->incoming = NULL;
+  free_hashmap(tr->memory_pool, tr->outgoing);
+  tr->outgoing = NULL;
   kmp_destroy_lrt_rcore_transmit_buffer_string_mempool(tr->memory_pool);
+  tr->memory_pool = NULL;
 }
 
 static struct lrt_rcore_transmit_buffer_entry_t*
@@ -70,18 +101,24 @@ get_or_create_entry(lrt_rcore_transmit_buffer_t* origin,
 
     struct lrt_rcore_transmit_buffer_entry_t* entry = &kh_val(map, it);
     entry->data = kmp_alloc_lrt_rcore_transmit_buffer_string_mempool(mp);
+    entry->data->l = 0;
+
+    assert(entry->data != 0);
+    assert(entry->data->m >= 0);
+
     entry->origin = origin;
     entry->reliable = true;
     entry->type = 0;
     entry->property = 0;
-    entry->liteCommMessageType = 0;
+    entry->message_type = 0;
     entry->transmit_offset = 0;
+    entry->seq_number = 0;
     return entry;
   }
 
   struct lrt_rcore_transmit_buffer_entry_t* entry = &kh_val(map, it);
 
-  if(entry->data == 0) {
+  if(entry->data == NULL) {
     entry->data = kmp_alloc_lrt_rcore_transmit_buffer_string_mempool(mp);
   }
 
@@ -114,27 +151,32 @@ lrt_rcore_transmit_buffer_receive_data_byte(lrt_rcore_transmit_buffer_t* handle,
                                             uint16_t property,
                                             uint8_t streamBits,
                                             uint8_t byte,
-                                            bool reliable)
+                                            lrt_rcp_message_type_t messageType,
+                                            bool reliable,
+                                            uint16_t seq_number)
 {
   struct lrt_rcore_transmit_buffer_entry_t* entry =
     get_or_create_entry(handle,
                         handle->memory_pool,
                         handle->incoming,
                         lrt__hashtable_key_from_property(type, property));
+
+  assert(entry != 0);
+
   if(entry->data->l == 0) {
     // This is the first call, the entry can be initialised.
+    entry->transmit_offset = 0;
     entry->type = type;
     entry->property = property;
-    entry->reliable = reliable;
-    entry->transmit_offset = 0;
+    entry->message_type = messageType;
   }
-
-  if(entry == 0) {
-    return;
-  }
+  entry->reliable = reliable;
+  entry->seq_number = seq_number;
 
   // Insert new byte.
+  assert(entry->data->l <= entry->data->m);
   kputc(byte, entry->data);
+  assert(entry->data->l <= entry->data->m);
 
   // Check if this is the last bit (the sEnd flag is set), which would make this
   // message ready to be given to the callback and the entry to be free'd.
@@ -145,6 +187,7 @@ lrt_rcore_transmit_buffer_receive_data_byte(lrt_rcore_transmit_buffer_t* handle,
 
     kmp_free_lrt_rcore_transmit_buffer_string_mempool(handle->memory_pool,
                                                       entry->data);
+    entry->data = NULL;
 
     // Free the entry.
     khint_t it = kh_get_lrt_rcore_transmit_buffer_hashmap(
@@ -195,14 +238,20 @@ lrt_rcore_transmit_buffer_send_ctrl(lrt_rcore_transmit_buffer_t* handle,
     return;
   }
 
-  // Nothing needs to be resized, the data is only shortened to 0.
+  // Nothing needs to be resized, the data is only shortened to 1 pseudo-byte.
   entry->data->l = 0;
+  kputc(0, entry->data);
+
+  assert(entry->data != 0);
+  assert(entry->data->l == 1);
+  assert(*entry->data->s == 0);
+
   entry->transmit_offset = 0;
   entry->type = type;
   entry->property = property;
   entry->reliable = reliable;
-  entry->seq_number = 0;
-  entry->liteCommMessageType = liteCommMessageType;
+  entry->seq_number = entry->seq_number + 1;
+  entry->message_type = liteCommMessageType;
 
   handle->data_ready_cb(entry, handle->data_ready_cb_userdata);
 }
@@ -219,6 +268,11 @@ lrt_rcore_transmit_buffer_free_send_slot(
   if(it == kh_end(handle->outgoing)) {
     return;
   }
+
+  entry->data->l = 0;
+  kmp_free_lrt_rcore_transmit_buffer_string_mempool(handle->memory_pool,
+                                                    entry->data);
+  entry->data = NULL;
 
   kh_del_lrt_rcore_transmit_buffer_hashmap(handle->outgoing, it);
 }
@@ -241,17 +295,29 @@ lrt_rcore_transmit_buffer_send_data(lrt_rcore_transmit_buffer_t* handle,
     return;
   }
 
-  // Reserve the required space, then send the data over the callback.
-  ks_resize(entry->data, ks_len(entry->data) + length);
-  memcpy(entry->data, data, length);
+  ks_resize(entry->data, length);
+
+  assert(entry->data->m >= length);
+
+  memcpy(entry->data->s, data, length);
+  entry->data->l = length;
+
+  assert(ks_len(entry->data) == length);
+  assert(entry->data->l == length);
+  assert(entry->data->m >= length);
+
   entry->transmit_offset = 0;
   entry->type = type;
   entry->property = property;
   entry->reliable = reliable;
   entry->seq_number = 0;
-  entry->liteCommMessageType = LRT_RCP_MESSAGE_TYPE_UPDATE;
+  entry->message_type = LRT_RCP_MESSAGE_TYPE_UPDATE;
 
   assert(handle->data_ready_cb != 0);
+  assert(entry != 0);
+  assert(entry->data != 0);
+  assert(entry->data->l != 0);
+  assert(entry->transmit_offset == 0);
   handle->data_ready_cb(entry, handle->data_ready_cb_userdata);
 }
 

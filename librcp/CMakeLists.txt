@@ -6,6 +6,7 @@ add_library(rcp STATIC
     ${LIBRCP_SRCS})
 
 set_property(TARGET rcp PROPERTY C_STANDARD 11)
+set_property(TARGET rcp PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(rcp
     PUBLIC

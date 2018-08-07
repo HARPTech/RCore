@@ -1,11 +1,13 @@
 #include "../include/RCore/librcp/message.h"
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #ifdef BIG_ENDIAN
 #define LRT_LIBRCP_CONVERSION_IMPL(sTYPENAME, tTYPE)                           \
   tTYPE lrt_librcp_##sTYPENAME##_from_data(const uint8_t* data, size_t length) \
   {                                                                            \
+    assert(length <= sizeof(tTYPE));                                           \
     memcpy(lrt_librcp_union_##sTYPENAME.bytes, data, length);                  \
     /* Reverse the data for Big Endian byte order. */                          \
     size_t i = sizeof(tTYPE) - 1;                                              \
@@ -38,8 +40,14 @@
   }
 #else
 #define LRT_LIBRCP_CONVERSION_IMPL(sTYPENAME, tTYPE)                           \
+  union lrt_librcp_##sTYPENAME##_t                                             \
+  {                                                                            \
+    tTYPE val;                                                                 \
+    uint8_t bytes[sizeof(tTYPE)];                                              \
+  };                                                                           \
   tTYPE lrt_librcp_##sTYPENAME##_from_data(const uint8_t* data, size_t length) \
   {                                                                            \
+    assert(length <= sizeof(tTYPE));                                           \
     memcpy(lrt_librcp_union_##sTYPENAME.bytes, data, length);                  \
     return lrt_librcp_union_##sTYPENAME.val;                                   \
   }                                                                            \

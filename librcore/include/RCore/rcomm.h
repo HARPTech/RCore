@@ -146,6 +146,10 @@ extern "C"
     assert(entry->data->l != 0);                                               \
     sPREFIX##_set_sStart(&handle->outgoing_block, true);                       \
     sPREFIX##_set_reliable(&handle->outgoing_block, entry->reliable);          \
+    sPREFIX##_set_litecomm_type(&handle->outgoing_block, entry->type);         \
+    sPREFIX##_set_litecomm_property(&handle->outgoing_block, entry->property); \
+    sPREFIX##_set_litecomm_message_type(&handle->outgoing_block,               \
+                                        entry->message_type);                  \
     while(status == LRT_RCORE_OK &&                                            \
           !lrt_rcore_transmit_buffer_entry_transmit_finished(entry)) {         \
       /* Each iteration handles a new block to be transmitted. */              \
@@ -160,11 +164,6 @@ extern "C"
       sPREFIX##_set_sEnd(                                                      \
         &handle->outgoing_block,                                               \
         lrt_rcore_transmit_buffer_entry_transmit_finished(entry));             \
-      sPREFIX##_set_litecomm_type(&handle->outgoing_block, entry->type);       \
-      sPREFIX##_set_litecomm_property(&handle->outgoing_block,                 \
-                                      entry->property);                        \
-      sPREFIX##_set_litecomm_message_type(&handle->outgoing_block,             \
-                                          entry->message_type);                \
       status = sPREFIX##_send_block(handle,                                    \
                                     &handle->outgoing_block,                   \
                                     handle->outgoing_block.significant_bytes); \

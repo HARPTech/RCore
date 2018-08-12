@@ -84,7 +84,7 @@ extern "C"
   void lrt_rcore_transmit_buffer_send_ctrl(lrt_rcore_transmit_buffer_t* handle,
                                            uint8_t type,
                                            uint16_t property,
-                                           uint8_t liteCommMessageType,
+                                           lrt_rcp_message_type_t message_type,
                                            bool reliable);
 
   void lrt_rcore_transmit_buffer_send_data(lrt_rcore_transmit_buffer_t* handle,

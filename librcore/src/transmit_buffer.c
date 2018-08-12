@@ -225,7 +225,7 @@ void
 lrt_rcore_transmit_buffer_send_ctrl(lrt_rcore_transmit_buffer_t* handle,
                                     uint8_t type,
                                     uint16_t property,
-                                    uint8_t liteCommMessageType,
+                                    lrt_rcp_message_type_t message_type,
                                     bool reliable)
 {
   struct lrt_rcore_transmit_buffer_entry_t* entry =
@@ -251,7 +251,7 @@ lrt_rcore_transmit_buffer_send_ctrl(lrt_rcore_transmit_buffer_t* handle,
   entry->property = property;
   entry->reliable = reliable;
   entry->seq_number = entry->seq_number + 1;
-  entry->message_type = liteCommMessageType;
+  entry->message_type = message_type;
 
   handle->data_ready_cb(entry, handle->data_ready_cb_userdata);
 }

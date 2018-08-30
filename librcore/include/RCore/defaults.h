@@ -9,9 +9,11 @@ extern "C"
 #endif
 
 #define LRT_RCOMM_BLOCKSIZE 16
-#define LRT_RCOMM_UNIVERSAL_DEFINITIONS()      \
-  LRT_RCORE_RCOMM_DEFINE_PROTOCOL_DEFINITIONS( \
-    rcomm, LRT_RCOMM_BLOCKSIZE, LRT_LIBRSP_STREAM_MESSAGE, 6u, 16u, 128u)
+#define LRT_RCOMM_UNIVERSAL_DEFINITIONS()                                 \
+  LRT_RCORE_RCOMM_DEFINE_PROTOCOL_DEFINITIONS(                            \
+    rcomm, LRT_RCOMM_BLOCKSIZE, LRT_LIBRSP_STREAM_MESSAGE, 6u, 16u, 128u) \
+  LRT_RCOMM_PTR(rcomm, RComm)
+
 #define LRT_RCOMM_UNIVERSAL()      \
   LRT_RCORE_RCOMM_DEFINE_PROTOCOL( \
     rcomm, LRT_RCOMM_BLOCKSIZE, LRT_LIBRSP_STREAM_MESSAGE, 6u, 16u, 128u)
@@ -25,7 +27,8 @@ extern "C"
                                   LRT_LIBRSP_STREAM_MESSAGE, \
                                   2u,                        \
                                   4u,                        \
-                                  32u)
+                                  32u)                       \
+  LRT_RCOMM_PTR(rcomm_spi, RCommSPI)
 
 #define LRT_RCOMM_WIFI_BLOCKSIZE LRT_RCOMM_BLOCKSIZE
 #define LRT_RCOMM_WIFI()                                     \
@@ -34,7 +37,8 @@ extern "C"
                                   LRT_LIBRSP_STREAM_MESSAGE, \
                                   3u,                        \
                                   8u,                        \
-                                  128u)
+                                  128u)                      \
+  LRT_RCOMM_PTR(rcomm_wifi, RCommWifi)
 
   // Crossovers for SPI and WIFI
 #define LRT_RCOMM_WIFI_SPI_CROSSOVER() \

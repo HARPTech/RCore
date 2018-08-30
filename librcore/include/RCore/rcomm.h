@@ -297,4 +297,21 @@ extern "C"
 }// closing brace for extern "C"
 #endif
 
+#ifdef __cplusplus
+#define LRT_RCOMM_PTR(sPREFIX, sPREFIX_UPPER)                               \
+  namespace lrt {                                                           \
+  namespace RCore {                                                         \
+  struct sPREFIX_UPPER##HandleDeleter                                       \
+  {                                                                         \
+    void operator()(sPREFIX##_handle_t* handle) { sPREFIX##_free(handle); } \
+  };                                                                        \
+                                                                            \
+  using sPREFIX_UPPER##HandlePtr =                                          \
+    std::unique_ptr<sPREFIX##_handle_t, sPREFIX_UPPER##HandleDeleter>;      \
+  }                                                                         \
+  }
+#else
+#define LRT_RCOMM_PTR(sPREFIX, sPREFIX_UPPER)
+#endif
+
 #endif

@@ -9,7 +9,13 @@ extern "C"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#ifdef __STDC_NO_THREADS__
+#define THREAD_LOCAL
+#else
 #include <threads.h>
+#define THREAD_LOCAL thread_local
+#endif
 
   /* Encodes the message type. The rest of the bits is held free for an inner
    * sequence number for dropping old messages in fast paced environments (many
@@ -34,7 +40,7 @@ extern "C"
     tTYPE val;                                                      \
     uint8_t bytes[sizeof(tTYPE)];                                   \
   };                                                                \
-  static thread_local union lrt_librcp_##sTYPENAME##_t              \
+  static THREAD_LOCAL union lrt_librcp_##sTYPENAME##_t              \
     lrt_librcp_union_##sTYPENAME;                                   \
   const uint8_t* lrt_librcp_##sTYPENAME##_to_data(const tTYPE val); \
   tTYPE lrt_librcp_##sTYPENAME##_from_data(const uint8_t* data, size_t length);

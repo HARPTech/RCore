@@ -2,6 +2,7 @@
 #define LRT_LIBRCORE_DEFAULTS_H
 
 #include "rcomm.h"
+#include "util.hpp"
 
 #ifdef __cplusplus
 extern "C"
@@ -12,7 +13,7 @@ extern "C"
 #define LRT_RCOMM_UNIVERSAL_DEFINITIONS()                                 \
   LRT_RCORE_RCOMM_DEFINE_PROTOCOL_DEFINITIONS(                            \
     rcomm, LRT_RCOMM_BLOCKSIZE, LRT_LIBRSP_STREAM_MESSAGE, 6u, 16u, 128u) \
-  LRT_RCOMM_PTR(rcomm, RComm)
+  LRT_RCOMM_PTR_DEF(rcomm, RComm)
 
 #define LRT_RCOMM_UNIVERSAL()      \
   LRT_RCORE_RCOMM_DEFINE_PROTOCOL( \
@@ -28,7 +29,7 @@ extern "C"
                                   2u,                        \
                                   4u,                        \
                                   32u)                       \
-  LRT_RCOMM_PTR(rcomm_spi, RCommSPI)
+  LRT_RCOMM_PTR_DEF(rcomm_spi, RCommSPI)
 
 #define LRT_RCOMM_WIFI_BLOCKSIZE LRT_RCOMM_BLOCKSIZE
 #define LRT_RCOMM_WIFI()                                     \
@@ -38,7 +39,7 @@ extern "C"
                                   3u,                        \
                                   8u,                        \
                                   128u)                      \
-  LRT_RCOMM_PTR(rcomm_wifi, RCommWifi)
+  LRT_RCOMM_PTR_DEF(rcomm_wifi, RCommWifi)
 
   // Crossovers for SPI and WIFI
 #define LRT_RCOMM_WIFI_SPI_CROSSOVER() \

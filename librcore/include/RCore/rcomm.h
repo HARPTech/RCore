@@ -26,13 +26,11 @@ extern "C"
 
 #define LRT_RCORE_RCOMM_DEFINE_PROTOCOL_DEFINITIONS(                           \
   sPREFIX, iBLOCK_SIZE, tMESSAGE, iSTACK_WIDTH, iSTACK_DEPTH, iACK_STACK_SIZE) \
-  LRT_LIBRBP_BLOCK_STRUCT(sPREFIX, iBLOCK_SIZE, tMESSAGE)                      \
+  LRT_LIBRBP_BLOCK_STRUCT(sPREFIX, iBLOCK_SIZE, tMESSAGE)          \
   LRT_RCORE_CALLBACKS(sPREFIX)                                                 \
   LRT_RCORE_ACK_STACK_DEFINITIONS(sPREFIX, iBLOCK_SIZE, iACK_STACK_SIZE)       \
   LRT_LIBRCP_TYPES_DEFINITIONS(sPREFIX)                                        \
-  typedef struct sPREFIX##_handle_t                                            \
-  {                                                                            \
-  } sPREFIX##_handle_t;                                                        \
+  typedef struct sPREFIX##_handle_t sPREFIX##_handle_t;                        \
   void sPREFIX##_init(sPREFIX##_handle_t* handle);                             \
   sPREFIX##_handle_t* sPREFIX##_create();                                      \
   void sPREFIX##_free(sPREFIX##_handle_t* handle);                             \
@@ -295,23 +293,6 @@ extern "C"
 
 #ifdef __cplusplus
 }// closing brace for extern "C"
-#endif
-
-#ifdef __cplusplus
-#define LRT_RCOMM_PTR(sPREFIX, sPREFIX_UPPER)                               \
-  namespace lrt {                                                           \
-  namespace RCore {                                                         \
-  struct sPREFIX_UPPER##HandleDeleter                                       \
-  {                                                                         \
-    void operator()(sPREFIX##_handle_t* handle) { sPREFIX##_free(handle); } \
-  };                                                                        \
-                                                                            \
-  using sPREFIX_UPPER##HandlePtr =                                          \
-    std::unique_ptr<sPREFIX##_handle_t, sPREFIX_UPPER##HandleDeleter>;      \
-  }                                                                         \
-  }
-#else
-#define LRT_RCOMM_PTR(sPREFIX, sPREFIX_UPPER)
 #endif
 
 #endif

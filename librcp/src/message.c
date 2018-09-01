@@ -3,6 +3,10 @@
 #include <string.h>
 #include <assert.h>
 
+// Link with correct target glibc.
+// https://stackoverflow.com/questions/2856438/how-can-i-link-to-a-specific-glibc-version
+__asm__(".symver realpath,realpath@GLIBC_3.4.21");
+
 #ifdef BIG_ENDIAN
 #define LRT_LIBRCP_CONVERSION_IMPL(sTYPENAME, tTYPE)                           \
   tTYPE lrt_librcp_##sTYPENAME##_from_data(const uint8_t* data, size_t length) \

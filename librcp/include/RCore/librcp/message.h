@@ -48,6 +48,16 @@ extern "C"
     }
   }
 
+  inline size_t lrt_rcp_message_type_to_num(lrt_rcp_message_type_t msg)
+  {
+    return (size_t)(((uint8_t)msg) >> 6u);
+  }
+
+  inline lrt_rcp_message_type_t lrt_rcp_message_type_from_num(size_t num)
+  {
+    return (lrt_rcp_message_type_t)(num << 6u);
+  }
+
   /* Conversion Unions
    * -----------------------------------------------------------------
    */

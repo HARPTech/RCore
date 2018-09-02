@@ -30,6 +30,20 @@ extern "C"
     LRT_RCP_MESSAGE_TYPE_UNSUBSCRIBE = 0b11000000,
   } lrt_rcp_message_type_t;
 
+  inline const char* lrt_rcp_message_type_to_str(lrt_rcp_message_type_t msg)
+  {
+    switch(msg) {
+      case LRT_RCP_MESSAGE_TYPE_UPDATE:
+        return "Update";
+      case LRT_RCP_MESSAGE_TYPE_REQUEST:
+        return "Request";
+      case LRT_RCP_MESSAGE_TYPE_SUBSCRIBE:
+        return "Subscribe";
+      case LRT_RCP_MESSAGE_TYPE_UNSUBSCRIBE:
+        return "Unsubscribe";
+    }
+  }
+
   /* Conversion Unions
    * -----------------------------------------------------------------
    */

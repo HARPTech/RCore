@@ -30,6 +30,8 @@ extern "C"
     LRT_RCP_MESSAGE_TYPE_UNSUBSCRIBE = 0b11000000,
   } lrt_rcp_message_type_t;
 
+#define LRT_RCP_MESSAGE_TYPE_COUNT 4
+
   inline const char* lrt_rcp_message_type_to_str(lrt_rcp_message_type_t msg)
   {
     switch(msg) {
@@ -41,6 +43,8 @@ extern "C"
         return "Subscribe";
       case LRT_RCP_MESSAGE_TYPE_UNSUBSCRIBE:
         return "Unsubscribe";
+      default:
+        return "Unknown Message Type";
     }
   }
 

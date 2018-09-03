@@ -6,9 +6,11 @@
 #include <RCore/librcp/message.h>
 #include <klib/kstring.h>
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(DISABLE_ADVANCED_CPP)
 #include <memory>
+#endif
 
+#ifdef __cplusplus
 extern "C"
 {
 #endif
@@ -125,7 +127,9 @@ extern "C"
 
 #ifdef __cplusplus
 }// closing brace for extern "C"
+#endif
 
+#if defined(__cplusplus) && !defined(DISABLE_ADVANCED_CPP)
 namespace lrt {
 namespace RCore {
 struct TransmitBufferPtrDeleter

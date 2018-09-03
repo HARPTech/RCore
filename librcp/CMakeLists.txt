@@ -2,22 +2,27 @@ set(LIBRCP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/message.c
     )
 
-add_library(rcp STATIC
-    ${LIBRCP_SRCS})
+if(USE_AVR_LIBRARIES)
+    add_avr_library(rcp STATIC
+	${LIBRCP_SRCS})
+else()
+    add_library(rcp STATIC
+	${LIBRCP_SRCS})
+endif()
 
 set_property(TARGET rcp PROPERTY C_STANDARD 11)
 set_property(TARGET rcp PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_include_directories(rcp
+target_include_directories(rcp${LIBRARY_SUFFIX}
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
 
 # Endian
 if(BIG_ENDIAN)
-    target_compile_definitions(rcp PUBLIC -DBIG_ENDIAN=1)
+    target_compile_definitions(rcp${LIBRARY_SUFFIX} PUBLIC -DBIG_ENDIAN=1)
 else()
-    target_compile_definitions(rcp PUBLIC -DBIG_ENDIAN=0)
+    target_compile_definitions(rcp${LIBRARY_SUFFIX} PUBLIC -DBIG_ENDIAN=0)
 endif()
 
 # Tests

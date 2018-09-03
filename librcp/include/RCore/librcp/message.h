@@ -10,7 +10,7 @@ extern "C"
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __STDC_NO_THREADS__
+#if defined(__STDC_NO_THREADS__) || defined(NO_THREADS_H)
 #define THREAD_LOCAL
 #else
 #include <threads.h>

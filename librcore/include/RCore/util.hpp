@@ -1,7 +1,7 @@
 #ifndef LRT_RCORE_UTIL_HPP
 #define LRT_RCORE_UTIL_HPP
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(DISABLE_ADVANCED_CPP)
 #define LRT_RCOMM_PTR(sPREFIX, sPREFIX_UPPER)                            \
   namespace lrt {                                                        \
   namespace RCore {                                                      \
@@ -20,7 +20,7 @@
 #define LRT_RCOMM_PTR(sPREFIX, sPREFIX_UPPER)
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(DISABLE_ADVANCED_CPP)
 #define LRT_RCOMM_PTR_DEF(sPREFIX, sPREFIX_UPPER)           \
   namespace lrt {                                           \
   namespace RCore {                                         \

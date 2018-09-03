@@ -26,7 +26,7 @@ extern "C"
 
 #define LRT_RCORE_RCOMM_DEFINE_PROTOCOL_DEFINITIONS(                           \
   sPREFIX, iBLOCK_SIZE, tMESSAGE, iSTACK_WIDTH, iSTACK_DEPTH, iACK_STACK_SIZE) \
-  LRT_LIBRBP_BLOCK_STRUCT(sPREFIX, iBLOCK_SIZE, tMESSAGE)          \
+  LRT_LIBRBP_BLOCK_STRUCT(sPREFIX, iBLOCK_SIZE, tMESSAGE)                      \
   LRT_RCORE_CALLBACKS(sPREFIX)                                                 \
   LRT_RCORE_ACK_STACK_DEFINITIONS(sPREFIX, iBLOCK_SIZE, iACK_STACK_SIZE)       \
   LRT_LIBRCP_TYPES_DEFINITIONS(sPREFIX)                                        \
@@ -50,7 +50,12 @@ extern "C"
   lrt_rcore_event_t sPREFIX##_handle_complete_block(                           \
     sPREFIX##_handle_t* handle);                                               \
   lrt_rcore_event_t sPREFIX##_parse_bytes(                                     \
-    sPREFIX##_handle_t* handle, const uint8_t* data, size_t length);
+    sPREFIX##_handle_t* handle, const uint8_t* data, size_t length);           \
+  lrt_rcore_event_t sPREFIX##_send_ctrl(sPREFIX##_handle_t* handle,            \
+                                        uint8_t type,                          \
+                                        uint16_t property,                     \
+                                        lrt_rcp_message_type_t message_type,   \
+                                        bool reliable);
 
 #define LRT_RCORE_RCOMM_DEFINE_PROTOCOL(                                       \
   sPREFIX, iBLOCK_SIZE, tMESSAGE, iSTACK_WIDTH, iSTACK_DEPTH, iACK_STACK_SIZE) \
@@ -288,6 +293,25 @@ extern "C"
       }                                                                        \
       handle->byte_counter = 0;                                                \
     }                                                                          \
+    return status;                                                             \
+  }                                                                            \
+  lrt_rcore_event_t sPREFIX##_send_ctrl(sPREFIX##_handle_t* handle,            \
+                                        uint8_t type,                          \
+                                        uint16_t property,                     \
+                                        lrt_rcp_message_type_t message_type,   \
+                                        bool reliable)                         \
+  {                                                                            \
+    lrt_rcore_event_t status = LRT_RCORE_OK;                                   \
+    assert(handle != 0);                                                       \
+    sPREFIX##_set_sStart(&handle->outgoing_block, true);                       \
+    sPREFIX##_set_reliable(&handle->outgoing_block, reliable);                 \
+    sPREFIX##_set_litecomm_type(&handle->outgoing_block, type);                \
+    sPREFIX##_set_litecomm_property(&handle->outgoing_block, property);        \
+    sPREFIX##_set_litecomm_message_type(&handle->outgoing_block,               \
+                                        message_type);                         \
+    sPREFIX##_set_sequence_number(&handle->outgoing_block, 0);                 \
+    sPREFIX##_set_sEnd(&handle->outgoing_block, true);                         \
+    status = sPREFIX##_send_block(handle, &handle->outgoing_block, 8);         \
     return status;                                                             \
   }
 

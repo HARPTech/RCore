@@ -5,6 +5,7 @@ project(RCore
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 option(BUILD_TESTS "Build the 'Criterion' Test Suite and enable testing" OFF)
+option(USE_AVR_LIBRARIES "Use AVR library calls instead of standard ones for Arduino compat" OFF)
 
 include(TestBigEndian)
 TEST_BIG_ENDIAN(BIG_ENDIAN)
@@ -12,6 +13,12 @@ TEST_BIG_ENDIAN(BIG_ENDIAN)
 add_subdirectory(third_party)
 if(BUILD_TESTS)
     enable_testing()
+endif()
+
+set(LIBRARY_SUFFIX "")
+
+if(USE_AVR_LIBRARIES)
+    set(LIBRARY_SUFFIX -${AVR_MCU})
 endif()
 
 add_subdirectory(librbp)

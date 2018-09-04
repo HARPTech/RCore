@@ -89,7 +89,7 @@ extern "C"
    * -----------------------------------------------------------------
    */
 
-#ifdef BIG_ENDIAN
+#if defined(BIG_ENDIAN) && !defined(__AVR__)
 #define LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, sTYPENAME, tTYPE)             \
   int16_t sPREFIX##_set_data_##sTYPENAME(                                \
     sPREFIX##_block_t* block, tTYPE data, int16_t counter)               \

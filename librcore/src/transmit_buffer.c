@@ -36,6 +36,7 @@ typedef struct lrt_rcore_transmit_buffer_t
   lrt_rcore_transmit_buffer_finished_cb finished_cb;
   void* data_ready_cb_userdata;
   lrt_rcore_transmit_buffer_data_ready_cb data_ready_cb;
+  uint8_t seq_num_counter;
 } lrt_rcore_transmit_buffer_t;
 
 lrt_rcore_transmit_buffer_t*
@@ -48,6 +49,8 @@ lrt_rcore_transmit_buffer_init()
   tr->outgoing = kh_init_lrt_rcore_transmit_buffer_hashmap();
 
   tr->memory_pool = kmp_init_lrt_rcore_transmit_buffer_string_mempool();
+
+  tr->seq_num_counter = 0;
 
   return tr;
 }
@@ -250,7 +253,7 @@ lrt_rcore_transmit_buffer_send_ctrl(lrt_rcore_transmit_buffer_t* handle,
   entry->type = type;
   entry->property = property;
   entry->reliable = reliable;
-  entry->seq_number = entry->seq_number + 1;
+  entry->seq_number = handle->seq_num_counter++;
   entry->message_type = message_type;
 
   handle->data_ready_cb(entry, handle->data_ready_cb_userdata);
@@ -310,7 +313,7 @@ lrt_rcore_transmit_buffer_send_data(lrt_rcore_transmit_buffer_t* handle,
   entry->type = type;
   entry->property = property;
   entry->reliable = reliable;
-  entry->seq_number = 0;
+  entry->seq_number = handle->seq_num_counter++;
   entry->message_type = LRT_RCP_MESSAGE_TYPE_UPDATE;
 
   assert(handle->data_ready_cb != 0);

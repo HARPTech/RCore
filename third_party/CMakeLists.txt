@@ -14,3 +14,7 @@ endif()
 # Klib
 add_library(klib INTERFACE)
 target_include_directories(klib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/)
+
+# SDS
+add_library(sds STATIC ${CMAKE_CURRENT_SOURCE_DIR}/sds/sds.c)
+target_include_directories(sds SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/sds)

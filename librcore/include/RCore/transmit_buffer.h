@@ -79,6 +79,17 @@ extern "C"
     bool reliable,
     uint16_t seq_number);
 
+  void lrt_rcore_transmit_buffer_receive_data_bytes(
+    lrt_rcore_transmit_buffer_t* handle,
+    uint8_t type,
+    uint16_t property,
+    uint8_t streamBits,
+    uint8_t* bytes,
+    size_t length,
+    lrt_rcp_message_type_t message_type,
+    bool reliable,
+    uint16_t seq_number);
+
   void lrt_rcore_transmit_buffer_free_send_slot(
     lrt_rcore_transmit_buffer_t* handle,
     lrt_rcore_transmit_buffer_entry_t* entry);

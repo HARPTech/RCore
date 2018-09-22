@@ -1,5 +1,5 @@
 set(LIBRBP_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/block.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/message.c
     )
 
 if(USE_AVR_LIBRARIES)
@@ -17,13 +17,9 @@ target_include_directories(rbp${LIBRARY_SUFFIX}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
 
-target_link_libraries(rbp${LIBRARY_SUFFIX} rsp${LIBRARY_SUFFIX})
+target_link_libraries(rbp${LIBRARY_SUFFIX} rsp${LIBRARY_SUFFIX} klib${LIBRARY_SUFFIX})
 
 # Tests
 if(BUILD_TESTS)
-    add_executable(rbp-test-block ${CMAKE_CURRENT_SOURCE_DIR}/test/test-block.c)
-    target_link_libraries(rbp-test-block Criterion rbp)
-    add_test(
-	NAME rbp-test-block
-	COMMAND rbp-test-block)
+    add_subdirectory(test)
 endif()

@@ -1,7 +1,7 @@
 #include "../include/RCore/transmit_buffer.h"
 #include "../include/RCore/internal/hashtable.h"
+#include "../../librsp/include/RCore/librsp/flags.h"
 #include <RCore/librcp/message.h>
-#include <RCore/librsp/stream_message.h>
 #include <assert.h>
 #include <klib/khash.h>
 #include <klib/klist.h>

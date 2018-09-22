@@ -27,9 +27,4 @@ endif()
 
 # Tests
 if(BUILD_TESTS)
-    add_executable(rcp-test-message ${CMAKE_CURRENT_SOURCE_DIR}/test/test-message.c)
-    target_link_libraries(rcp-test-message Criterion rcp rsp rbp)
-    add_test(
-	NAME rcp-test-message
-	COMMAND rcp-test-message)
 endif()

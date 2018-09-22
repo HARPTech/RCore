@@ -1,18 +1,17 @@
 #include "../include/RCore/librcp/message.h"
+#include "../../librsp/include/RCore/librsp/data.h"
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-
-// Link with correct target glibc.
-// https://stackoverflow.com/questions/2856438/how-can-i-link-to-a-specific-glibc-version
-__asm__(".symver realpath,realpath@GLIBC_3.4.21");
 
 #if defined(BIG_ENDIAN) && !defined(__AVR__)
 #define LRT_LIBRCP_CONVERSION_IMPL(sTYPENAME, tTYPE)                           \
   tTYPE lrt_librcp_##sTYPENAME##_from_data(const uint8_t* data, size_t length) \
   {                                                                            \
     assert(length <= sizeof(tTYPE));                                           \
-    memcpy(lrt_librcp_union_##sTYPENAME.bytes, data, length);                  \
+    if(lrt_librcp_union_##sTYPENAME.bytes != data) {                           \
+      memcpy(lrt_librcp_union_##sTYPENAME.bytes, data, length);                \
+    }                                                                          \
     /* Reverse the data for Big Endian byte order. */                          \
     size_t i = sizeof(tTYPE) - 1;                                              \
     size_t j = 0;                                                              \
@@ -41,6 +40,19 @@ __asm__(".symver realpath,realpath@GLIBC_3.4.21");
       ++j;                                                                     \
     }                                                                          \
     return lrt_librcp_union_##sTYPENAME.bytes;                                 \
+  }                                                                            \
+  void lrt_librcp_##sTYPENAME##_set_data(lrt_rbp_message_t* message,           \
+                                         const tTYPE val)                      \
+  {                                                                            \
+    rcomm_message_insert_data(                                                 \
+      message, lrt_librcp_##sTYPENAME##_to_data(val), sizeof(tTYPE), 0);       \
+  }                                                                            \
+  tTYPE lrt_librcp_##sTYPENAME##_get_data(lrt_rbp_message_t* message)          \
+  {                                                                            \
+    rcomm_message_read_data(                                                   \
+      message, lrt_librcp_union_##sTYPENAME.bytes, sizeof(tTYPE), 0);          \
+    return lrt_librcp_##sTYPENAME##_from_data(                                 \
+      lrt_librcp_union_##sTYPENAME.bytes, sizeof(tTYPE));                      \
   }
 #else
 #define LRT_LIBRCP_CONVERSION_IMPL(sTYPENAME, tTYPE)                           \
@@ -54,6 +66,19 @@ __asm__(".symver realpath,realpath@GLIBC_3.4.21");
   {                                                                            \
     lrt_librcp_union_##sTYPENAME.val = val;                                    \
     return lrt_librcp_union_##sTYPENAME.bytes;                                 \
+  }                                                                            \
+  void lrt_librcp_##sTYPENAME##_set_data(lrt_rbp_message_t* message,           \
+                                         const tTYPE val)                      \
+  {                                                                            \
+    rcomm_message_insert_data(                                                 \
+      message, lrt_librcp_##sTYPENAME##_to_data(val), sizeof(tTYPE));          \
+  }                                                                            \
+  tTYPE lrt_librcp_##sTYPENAME##_get_data(lrt_rbp_message_t* message)          \
+  {                                                                            \
+    rcomm_message_read_data(                                                   \
+      message, lrt_librcp_union_##sTYPENAME.bytes, sizeof(tTYPE));             \
+    return lrt_librcp_##sTYPENAME##_from_data(                                 \
+      lrt_librcp_union_##sTYPENAME.bytes, sizeof(tTYPE));                      \
   }
 #endif
 
@@ -68,3 +93,9 @@ LRT_LIBRCP_CONVERSION_IMPL(Uint64, uint64_t)
 LRT_LIBRCP_CONVERSION_IMPL(Int64, int64_t)
 LRT_LIBRCP_CONVERSION_IMPL(Float, float)
 LRT_LIBRCP_CONVERSION_IMPL(Double, double)
+
+lrt_rcp_message_type_t
+rcomm_get_litecomm_message_type(lrt_rbp_message_t* message);
+void
+rcomm_set_litecomm_message_type(lrt_rbp_message_t* message,
+                                lrt_rcp_message_type_t type);

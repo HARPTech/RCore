@@ -1,6 +1,8 @@
 #ifndef LRT_LIBRCORE_ACK_STACK_H
 #define LRT_LIBRCORE_ACK_STACK_H
 
+#include "../../../librbp/include/RCore/librbp/message.h"
+#include "callbacks.h"
 #include "events.h"
 #include "internal/hashtable.h"
 
@@ -9,83 +11,27 @@ extern "C"
 {
 #endif
 
-#define LRT_RCORE_ACK_STACK_DEFINITIONS(sPREFIX, iBLOCK_SIZE, iACK_STACK_SIZE) \
-  typedef struct sPREFIX##_ack_stack_entry_t                                   \
-  {                                                                            \
-  } sPREFIX##_ack_stack_entry_t;                                               \
-  typedef struct sPREFIX##_ack_stack_t                                         \
-  {                                                                            \
-  } sPREFIX##_ack_stack_t;                                                     \
-  void sPREFIX##_init_ack_stack(sPREFIX##_ack_stack_t* stack);                 \
-  size_t sPREFIX##_ack_stack_count_pending(sPREFIX##_ack_stack_t* stack);      \
-  lrt_rcore_event_t sPREFIX##_ack_stack_insert(sPREFIX##_ack_stack_t* stack,   \
-                                               sPREFIX##_block_t* block);      \
-  lrt_rcore_event_t sPREFIX##_ack_stack_remove(sPREFIX##_ack_stack_t* stack,   \
-                                               sPREFIX##_block_t* block);
+  typedef struct lrt_rcore_ack_stack_t lrt_rcore_ack_stack_t;
 
-#define LRT_RCORE_ACK_STACK(sPREFIX, iBLOCK_SIZE, iACK_STACK_SIZE)           \
-  typedef struct sPREFIX##_ack_stack_entry_t                                 \
-  {                                                                          \
-    int8_t sequence_number;                                                  \
-    sPREFIX##_block_t block;                                                 \
-  } sPREFIX##_ack_stack_entry_t;                                             \
-  typedef struct sPREFIX##_ack_stack_t                                       \
-  {                                                                          \
-    sPREFIX##_ack_stack_entry_t entries[iACK_STACK_SIZE];                    \
-  } sPREFIX##_ack_stack_t;                                                   \
-  void sPREFIX##_init_ack_stack(sPREFIX##_ack_stack_t* stack)                \
-  {                                                                          \
-    for(size_t i = 0; i < iACK_STACK_SIZE; ++i) {                            \
-      stack->entries[i].sequence_number = -1;                                \
-    }                                                                        \
-  }                                                                          \
-  size_t sPREFIX##_ack_stack_count_pending(sPREFIX##_ack_stack_t* stack)     \
-  {                                                                          \
-    size_t count = 0;                                                        \
-    for(size_t i = 0; i < iACK_STACK_SIZE; ++i) {                            \
-      if(stack->entries[i].sequence_number >= 0) {                           \
-        ++count;                                                             \
-      }                                                                      \
-    }                                                                        \
-    return count;                                                            \
-  }                                                                          \
-  lrt_rcore_event_t sPREFIX##_ack_stack_insert(sPREFIX##_ack_stack_t* stack, \
-                                               sPREFIX##_block_t* block)     \
-  {                                                                          \
-    /* Find a free slot in the stack. */                                     \
-    sPREFIX##_ack_stack_entry_t* entry = NULL;                               \
-    for(size_t i = 0; i < iACK_STACK_SIZE; ++i) {                            \
-      if(stack->entries[i].sequence_number < 0) {                            \
-        entry = &stack->entries[i];                                          \
-        break;                                                               \
-      }                                                                      \
-    }                                                                        \
-    if(entry == NULL) {                                                      \
-      return LRT_RCORE_ACK_STACK_FULL;                                       \
-    }                                                                        \
-    /* Save the block this slot. */                                          \
-    assert(block->significant_bytes <= iBLOCK_SIZE);                         \
-    memcpy(entry->block.data, block->data, block->significant_bytes);       \
-    entry->block.significant_bytes = block->significant_bytes;               \
-                                                                             \
-    return LRT_RCORE_OK;                                                     \
-  }                                                                          \
-  lrt_rcore_event_t sPREFIX##_ack_stack_remove(sPREFIX##_ack_stack_t* stack, \
-                                               sPREFIX##_block_t* block)     \
-  {                                                                          \
-    for(size_t i = 0; i < iACK_STACK_SIZE; ++i) {                            \
-      if(stack->entries[i].sequence_number ==                                \
-           sPREFIX##_get_sequence_number(block) &&                           \
-         sPREFIX##_get_litecomm_type(&stack->entries[i].block) ==            \
-           sPREFIX##_get_litecomm_type(block) &&                             \
-         sPREFIX##_get_litecomm_property(&stack->entries[i].block) ==        \
-           sPREFIX##_get_litecomm_property(block)) {                         \
-        stack->entries[i].sequence_number = -1;                              \
-        return LRT_RCORE_OK;                                                 \
-      }                                                                      \
-    }                                                                        \
-    return LRT_RCORE_NO_ACK_ENTRY_FOUND;                                     \
-  }
+  lrt_rcore_ack_stack_t* lrt_rcore_ack_stack_init(
+    size_t stack_size,
+    size_t maximum_stack_size,
+    size_t maximum_queue_size,
+    size_t ack_ns_avg_sampling_rate);
+  void lrt_rcore_ack_stack_free(lrt_rcore_ack_stack_t* stack);
+
+  size_t lrt_rcore_ack_stack_count_pending(const lrt_rcore_ack_stack_t* stack);
+
+  lrt_rcore_event_t lrt_rcore_ack_stack_insert(
+    lrt_rcore_ack_stack_t* stack,
+    const lrt_rbp_message_t* message);
+
+  lrt_rcore_event_t lrt_rcore_ack_stack_remove(
+    lrt_rcore_ack_stack_t* stack,
+    const lrt_rbp_message_t* message);
+
+  lrt_rcore_event_t lrt_rcore_ack_stack_tick(lrt_rcore_ack_stack_t* stack,
+                                             uint32_t ns_since_last_tick);
 
 #ifdef __cplusplus
 }// closing brace for extern "C"

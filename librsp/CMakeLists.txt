@@ -1,5 +1,7 @@
 set(LIBRSP_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/stream_message.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/flags.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/litecomm.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/data.c
     )
 
 if(USE_AVR_LIBRARIES)
@@ -29,9 +31,5 @@ endif()
 
 # Tests
 if(BUILD_TESTS)
-    add_executable(rsp-test-stream-message ${CMAKE_CURRENT_SOURCE_DIR}/test/test-stream-message.c)
-    target_link_libraries(rsp-test-stream-message Criterion rsp rbp)
-    add_test(
-	NAME rsp-test-stream-message
-	COMMAND rsp-test-stream-message)
+    add_subdirectory(test)
 endif()

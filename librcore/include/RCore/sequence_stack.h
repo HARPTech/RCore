@@ -11,9 +11,7 @@ extern "C"
 #include <stdio.h>
 #include <stdlib.h>
 
-#define LRT_RCORE_SEQUENCE_STACK(                                              \
-  sPREFIX, iBLOCK_SIZE, iSTACK_WIDTH, iSTACK_DEPTH)                            \
-  typedef struct sPREFIX##_sequence_stack_entry_t                              \
+  typedef struct lrt_rcore_sequence_stack_entry_t                              \
   {                                                                            \
     /* The LiteCommType of this entry. Negative Numbers mean, the entry is     \
      * unused. */                                                              \
@@ -25,9 +23,9 @@ extern "C"
     sPREFIX##_block_t blocks[iSTACK_DEPTH];                                    \
     size_t stack_counter;                                                      \
   } sPREFIX##_sequence_stack_entry_t;                                          \
-  typedef struct sPREFIX##_sequence_stack_t                                    \
+  typedef struct lrt_rcore_sequence_stack_t                                    \
   {                                                                            \
-    sPREFIX##_sequence_stack_entry_t entries[iSTACK_WIDTH];                    \
+    lrt_rcore_sequence_stack_entry_t entries[iSTACK_WIDTH];                    \
   } sPREFIX##_sequence_stack_t;                                                \
   void sPREFIX##_init_sequence_stack(sPREFIX##_sequence_stack_t* stack)        \
   {                                                                            \

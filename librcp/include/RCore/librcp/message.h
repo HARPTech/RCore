@@ -1,6 +1,8 @@
 #ifndef LRT_LIBRCP_MESSAGE_H
 #define LRT_LIBRCP_MESSAGE_H
 
+#include "../../../../librbp/include/RCore/librbp/message.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -62,16 +64,20 @@ extern "C"
    * -----------------------------------------------------------------
    */
 
-#define LRT_LIBRCP_CONVERSION_UNION(sTYPENAME, tTYPE)               \
-  union lrt_librcp_##sTYPENAME##_t                                  \
-  {                                                                 \
-    tTYPE val;                                                      \
-    uint8_t bytes[sizeof(tTYPE)];                                   \
-  };                                                                \
-  static THREAD_LOCAL union lrt_librcp_##sTYPENAME##_t              \
-    lrt_librcp_union_##sTYPENAME;                                   \
-  const uint8_t* lrt_librcp_##sTYPENAME##_to_data(const tTYPE val); \
-  tTYPE lrt_librcp_##sTYPENAME##_from_data(const uint8_t* data, size_t length);
+#define LRT_LIBRCP_CONVERSION_UNION(sTYPENAME, tTYPE)                \
+  union lrt_librcp_##sTYPENAME##_t                                   \
+  {                                                                  \
+    tTYPE val;                                                       \
+    uint8_t bytes[sizeof(tTYPE)];                                    \
+  };                                                                 \
+  static THREAD_LOCAL union lrt_librcp_##sTYPENAME##_t               \
+    lrt_librcp_union_##sTYPENAME;                                    \
+  const uint8_t* lrt_librcp_##sTYPENAME##_to_data(const tTYPE val);  \
+  tTYPE lrt_librcp_##sTYPENAME##_from_data(const uint8_t* data,      \
+                                           size_t length);           \
+  void lrt_librcp_##sTYPENAME##_set_data(lrt_rbp_message_t* message, \
+                                         const tTYPE val);           \
+  tTYPE lrt_librcp_##sTYPENAME##_get_data(lrt_rbp_message_t* message);
 
   LRT_LIBRCP_CONVERSION_UNION(Bool, bool)
   LRT_LIBRCP_CONVERSION_UNION(Uint8, uint8_t)
@@ -85,152 +91,15 @@ extern "C"
   LRT_LIBRCP_CONVERSION_UNION(Float, float)
   LRT_LIBRCP_CONVERSION_UNION(Double, double)
 
-  /* Block conversions
-   * -----------------------------------------------------------------
-   */
-
-#if defined(BIG_ENDIAN) && !defined(__AVR__)
-#define LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, sTYPENAME, tTYPE)             \
-  int16_t sPREFIX##_set_data_##sTYPENAME(                                \
-    sPREFIX##_block_t* block, tTYPE data, int16_t counter)               \
-  {                                                                      \
-    if(counter < 0) {                                                    \
-      counter = sizeof(tTYPE);                                           \
-    }                                                                    \
-    lrt_librcp_union_##sTYPENAME.val = data;                             \
-    for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block); \
-        ++i, --counter) {                                                \
-      sPREFIX##_set_data(                                                \
-        block,                                                           \
-        i,                                                               \
-        lrt_librcp_union_##sTYPENAME.bytes[sizeof(tTYPE) - counter]);    \
-    }                                                                    \
-    return counter;                                                      \
-  }                                                                      \
-  int16_t sPREFIX##_get_data_##sTYPENAME(                                \
-    sPREFIX##_block_t* block, tTYPE* data, int16_t counter)              \
-  {                                                                      \
-    if(counter < 0) {                                                    \
-      counter = sizeof(tTYPE);                                           \
-      *data = 0;                                                         \
-      lrt_librcp_union_##sTYPENAME.val = 0;                              \
-      sPREFIX##_set_sStart(block, true);                                 \
-    } else {                                                             \
-      lrt_librcp_union_##sTYPENAME.val = *data;                          \
-    }                                                                    \
-    for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block); \
-        ++i, --counter) {                                                \
-      lrt_librcp_union_##sTYPENAME.bytes[sizeof(tTYPE) - counter] =      \
-        sPREFIX##_get_data(block, i);                                    \
-    }                                                                    \
-    *data = lrt_librcp_union_##sTYPENAME.val;                            \
-    if(counter == 0)                                                     \
-      sPREFIX##_set_sEnd(block, true);                                   \
-    return counter;                                                      \
+  inline lrt_rcp_message_type_t rcomm_get_litecomm_message_type(
+    lrt_rbp_message_t* message)
+  {
+    return (lrt_rcp_message_type_t)(message->data[4] & 0b11000000u);
   }
-#else
-#define LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, sTYPENAME, tTYPE)             \
-  int16_t sPREFIX##_set_data_##sTYPENAME(                                \
-    sPREFIX##_block_t* block, tTYPE data, int16_t counter)               \
-  {                                                                      \
-    if(counter < 0) {                                                    \
-      counter = sizeof(tTYPE);                                           \
-    }                                                                    \
-    lrt_librcp_union_##sTYPENAME.val = data;                             \
-    for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block); \
-        ++i, --counter) {                                                \
-      sPREFIX##_set_data(                                                \
-        block, i, lrt_librcp_union_##sTYPENAME.bytes[counter - 1]);      \
-    }                                                                    \
-    return counter;                                                      \
-  }                                                                      \
-  int16_t sPREFIX##_get_data_##sTYPENAME(                                \
-    sPREFIX##_block_t* block, tTYPE* data, int16_t counter)              \
-  {                                                                      \
-    if(counter < 0) {                                                    \
-      counter = sizeof(tTYPE);                                           \
-      *data = 0;                                                         \
-      lrt_librcp_union_##sTYPENAME.val = 0;                              \
-      sPREFIX##_set_sStart(block, true);                                 \
-    } else {                                                             \
-      lrt_librcp_union_##sTYPENAME.val = *data;                          \
-    }                                                                    \
-    for(size_t i = 1; counter > 0 && i < sPREFIX##_get_data_size(block); \
-        ++i, --counter) {                                                \
-      lrt_librcp_union_##sTYPENAME.bytes[counter - 1] =                  \
-        sPREFIX##_get_data(block, i);                                    \
-    }                                                                    \
-    *data = lrt_librcp_union_##sTYPENAME.val;                            \
-    if(counter == 0)                                                     \
-      sPREFIX##_set_sEnd(block, true);                                   \
-    return counter;                                                      \
-  }
-
-#endif
-
-#define LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, sTYPENAME, tTYPE) \
-  int16_t sPREFIX##_set_data_##sTYPENAME(                               \
-    sPREFIX##_block_t* block, tTYPE data, int16_t counter);             \
-  int16_t sPREFIX##_get_data_##sTYPENAME(                               \
-    sPREFIX##_block_t* block, tTYPE* data, int16_t counter);
-
-#define LRT_LIBRCP_TYPES_DEFINITIONS(sPREFIX)                               \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Bool, bool)                 \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Uint8, uint8_t)             \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Int8, int8_t)               \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Uint16, uint16_t)           \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Int16, int16_t)             \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Uint32, uint32_t)           \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Int32, int32_t)             \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Uint64, uint64_t)           \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Int64, int64_t)             \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Float, float)               \
-  LRT_LIBRCP_TYPES_FOR_TYPE_DEFINITION(sPREFIX, Double, double)             \
-  lrt_rcp_message_type_t sPREFIX##_get_litecomm_message_type(               \
-    sPREFIX##_block_t* block);                                              \
-  void sPREFIX##_set_litecomm_message_type(sPREFIX##_block_t* block,        \
-                                           lrt_rcp_message_type_t type);    \
-  uint8_t sPREFIX##_get_litecomm_sequence_number(sPREFIX##_block_t* block); \
-  void sPREFIX##_set_litecomm_sequence_number(sPREFIX##_block_t* block,     \
-                                              uint8_t seq);
-
-#define LRT_LIBRCP_TYPES(sPREFIX)                                          \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Bool, bool)                           \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint8, uint8_t)                       \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int8, int8_t)                         \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint16, uint16_t)                     \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int16, int16_t)                       \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint32, uint32_t)                     \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int32, int32_t)                       \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Uint64, uint64_t)                     \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Int64, int64_t)                       \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Float, float)                         \
-  LRT_LIBRCP_TYPES_FOR_TYPE(sPREFIX, Double, double)                       \
-  lrt_rcp_message_type_t sPREFIX##_get_litecomm_message_type(              \
-    sPREFIX##_block_t* block)                                              \
-  {                                                                        \
-    return (lrt_rcp_message_type_t)(sPREFIX##_get_data(block, 0) &         \
-                                    0b11000000u);                          \
-  }                                                                        \
-  void sPREFIX##_set_litecomm_message_type(sPREFIX##_block_t* block,       \
-                                           lrt_rcp_message_type_t type)    \
-  {                                                                        \
-    sPREFIX##_set_data(block,                                              \
-                       0,                                                  \
-                       (sPREFIX##_get_data(block, 0) & 0b00111111u) |      \
-                         (type & 0b11000000));                             \
-  }                                                                        \
-  uint8_t sPREFIX##_get_litecomm_sequence_number(sPREFIX##_block_t* block) \
-  {                                                                        \
-    return sPREFIX##_get_data(block, 0) & 0b00111111u;                     \
-  }                                                                        \
-  void sPREFIX##_set_litecomm_sequence_number(sPREFIX##_block_t* block,    \
-                                              uint8_t seq)                 \
-  {                                                                        \
-    sPREFIX##_set_data(block,                                              \
-                       0,                                                  \
-                       sPREFIX##_get_litecomm_message_type(block) |        \
-                         (seq & 0b00111111u));                             \
+  inline void rcomm_set_litecomm_message_type(lrt_rbp_message_t* message,
+                                              lrt_rcp_message_type_t type)
+  {
+    message->data[4] = (message->data[4] & 0b00111111u) | type;
   }
 
 #ifdef __cplusplus

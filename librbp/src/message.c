@@ -31,12 +31,22 @@ lrt_rbp_message_init(lrt_rbp_message_t* message,
 }
 
 void
+lrt_rbp_message_free_internal(lrt_rbp_message_t* message)
+{
+  assert(message != NULL);
+  if(message->data != NULL) {
+    free(message->data);
+  }
+}
+
+void
 lrt_rbp_message_free(lrt_rbp_message_t* message)
 {
   assert(message != NULL);
   assert(message->data != NULL);
 
-  free(message->data);
+  lrt_rbp_message_free_internal(message);
+
   free(message);
 }
 

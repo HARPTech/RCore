@@ -9,42 +9,23 @@ extern "C"
 {
 #endif
 
-#define LRT_RCOMM_BLOCKSIZE 16
-#define LRT_RCOMM_UNIVERSAL_DEFINITIONS()                                 \
-  LRT_RCORE_RCOMM_DEFINE_PROTOCOL_DEFINITIONS(                            \
-    rcomm, LRT_RCOMM_BLOCKSIZE, LRT_LIBRSP_STREAM_MESSAGE, 6u, 16u, 128u) \
-  LRT_RCOMM_PTR_DEF(rcomm, RComm)
+  typedef struct lrt_rcore_rcomm_config_t
+  {
+    size_t message_default_reserved_memory;
+    size_t maximum_buffer_size;
+    size_t maximum_stack_size;
+    size_t maximum_queue_size;
+    lrt_rbp_message_config_type message_config;
+  } lrt_rcore_rcomm_config_t;
 
-#define LRT_RCOMM_UNIVERSAL()      \
-  LRT_RCORE_RCOMM_DEFINE_PROTOCOL( \
-    rcomm, LRT_RCOMM_BLOCKSIZE, LRT_LIBRSP_STREAM_MESSAGE, 6u, 16u, 128u)
+  const lrt_rcore_rcomm_config_t lrt_rcore_rcomm_universal_defaults =
+    { 14, 14, 8, 8, LRT_RBP_MESSAGE_CONFIG_ENABLE_CRC8 };
 
-  typedef struct rcomm_handle_t rcomm_handle_t;
+  rcomm_handle_t* rcomm_handle_create_from_config(
+    lrt_rcore_rcomm_config_t config);
 
-#define LRT_RCOMM_SPI_BLOCKSIZE LRT_RCOMM_BLOCKSIZE
-#define LRT_RCOMM_SPI()                                      \
-  LRT_RCORE_RCOMM_DEFINE_PROTOCOL(rcomm_spi,                 \
-                                  LRT_RCOMM_SPI_BLOCKSIZE,   \
-                                  LRT_LIBRSP_STREAM_MESSAGE, \
-                                  2u,                        \
-                                  4u,                        \
-                                  32u)                       \
-  LRT_RCOMM_PTR_DEF(rcomm_spi, RCommSPI)
-
-#define LRT_RCOMM_WIFI_BLOCKSIZE LRT_RCOMM_BLOCKSIZE
-#define LRT_RCOMM_WIFI()                                     \
-  LRT_RCORE_RCOMM_DEFINE_PROTOCOL(rcomm_wifi,                \
-                                  LRT_RCOMM_WIFI_BLOCKSIZE,  \
-                                  LRT_LIBRSP_STREAM_MESSAGE, \
-                                  3u,                        \
-                                  8u,                        \
-                                  128u)                      \
-  LRT_RCOMM_PTR_DEF(rcomm_wifi, RCommWifi)
-
-  // Crossovers for SPI and WIFI
-#define LRT_RCOMM_WIFI_SPI_CROSSOVER() \
-  LRT_RCORE_STACK_CROSSOVER_DUPLEX(    \
-    rcomm_wifi, rcomm_spi, LRT_RCOMM_SPI_BLOCKSIZE, LRT_RCOMM_WIFI_BLOCKSIZE)
+  void rcomm_handle_init_from_config(rcomm_handle_t* handle,
+                                     lrt_rcore_rcomm_config_t config);
 
 #ifdef __cplusplus
 }// closing brace for extern "C"

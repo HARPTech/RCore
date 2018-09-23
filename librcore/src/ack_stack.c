@@ -1,18 +1,19 @@
 #include "../include/RCore/ack_stack.h"
 #include "../../librsp/include/RCore/librsp/litecomm.h"
 #include "../include/RCore/internal/hashtable.h"
+#include "../include/RCore/rcomm.h"
 
 #include <assert.h>
 #include <klib/khash.h>
 #include <klib/klist.h>
 
-KLIST_INIT(message_list, lrt_rbp_message_t, lrt_rbp_message_free)
+KLIST_INIT(message_list, lrt_rbp_message_t, LRT_LIBRBP_MESSAGE_LIST_FREER)
 
 typedef struct rcomm_ack_stack_entry_t
 {
   size_t queue_size;
   uint32_t ns_since_last_ack;
-  klist_t(message_list) messages;
+  klist_t(message_list) * messages;
 } rcomm_ack_stack_entry_t;
 
 LRT_LIBRCORE_HASHTABLE_INIT(entry_map, rcomm_ack_stack_entry_t)
@@ -20,21 +21,13 @@ LRT_LIBRCORE_HASHTABLE_INIT(entry_map, rcomm_ack_stack_entry_t)
 static void
 free_stack_entry(rcomm_ack_stack_entry_t* entry)
 {
-  assert(entry->messages != NULL);
-
-  // Free all contained messages first.
-  kliter_t(message_list) * msg;
-  for(msg = kl_begin(entry->messages); msg != kl_end(entry->messages);
-      msg = kl_next(msg)) {
-    lrt_rbp_message_free(kl_val(msg));
+  if(entry->messages != NULL) {
+    // Free all contained messages.
+    kl_destroy(message_list, entry->messages);
   }
-  kl_destroy(message_list, entry->messages);
-
-  // Then, free the entry itself.
-  free(entry);
 }
 
-typedef struct rcomm_ack_stack_t
+typedef struct lrt_rcore_ack_stack_t
 {
   size_t entries_in_use;
   size_t messages_in_use;
@@ -46,11 +39,11 @@ typedef struct rcomm_ack_stack_t
 
   uint32_t ack_resending_threshold;
 
-  khash_t(entry_map) entries;
-} rcomm_ack_stack_t;
+  khash_t(entry_map) * entries;
+} lrt_rcore_ack_stack_t;
 
 static void
-recalculate_ack_resending_threshold(rcomm_ack_stack_t* stack,
+recalculate_ack_resending_threshold(lrt_rcore_ack_stack_t* stack,
                                     uint32_t ns_since_last_ack)
 {
   stack->ack_ns_avg -= stack->ack_ns_avg / stack->ack_ns_avg_sampling_rate;
@@ -65,12 +58,18 @@ init_stack_entry(rcomm_ack_stack_entry_t* entry)
   if(entry->messages == NULL) {
     // Initiate the messages list.
     entry->messages = kl_init(message_list);
+  } else {
+    // Empty the messages list completely.
+    lrt_rbp_message_t* msg = NULL;
+    while(kl_shift(message_list, entry->messages, msg) == 0) {
+      assert(msg != NULL);
+    }
   }
   entry->queue_size = 0;
 }
 
-static rcomm_ack_stack_entry_t
-get_or_create_entry_from_stack(rcomm_ack_stack_t* stack,
+static rcomm_ack_stack_entry_t*
+get_or_create_entry_from_stack(lrt_rcore_ack_stack_t* stack,
                                uint8_t lType,
                                uint16_t lProp)
 {
@@ -87,7 +86,11 @@ get_or_create_entry_from_stack(rcomm_ack_stack_t* stack,
     // Could not find the entry in the hash map, create a new entry in the map
     // if there is space left.
     if(stack->entries_in_use < stack->maximum_entries_in_use) {
-      it = kh_put(entry_map, stack->entries, key);
+      int ret = 0;
+      it = kh_put(entry_map, stack->entries, key, &ret);
+      if(ret == -1) {
+        return NULL;
+      }
 
       rcomm_ack_stack_entry_t* entry = &kh_val(stack->entries, it);
 
@@ -104,7 +107,7 @@ get_or_create_entry_from_stack(rcomm_ack_stack_t* stack,
 }
 
 static lrt_rcore_event_t
-pop_message(rcomm_ack_stack_t* stack,
+pop_message(lrt_rcore_ack_stack_t* stack,
             uint8_t lType,
             uint16_t lProp,
             uint16_t sequence_number)
@@ -120,34 +123,25 @@ pop_message(rcomm_ack_stack_t* stack,
 
   rcomm_ack_stack_entry_t* entry = &kh_val(stack->entries, it);
 
-  // Look for the respective message to pop from the list.
-  kliter_t(message_list)* last_msg = NULL;
-  kliter_t(message_list)* msg = NULL;
+  // Set the new head to the next message.
+  if(entry->messages->head != entry->messages->tail) {
+    kliter_t(message_list)* p = entry->messages->head;
 
-  lrt_rbp_message_t* message;
+    // The sequence numbers always have to be in the right order logically.
+    assert(rcomm_message_get_sequence_number(&p->data) == sequence_number);
 
-  for(msg = kl_begin(entry->messages); msg != kl_end(entry->messages);
-      msg = kl_next(msg)) {
-    message = kl_val(msg);
+    p->data.length = 0;
+    kmp_free(message_list, entry->messages->mp, p);
 
-    if(rcomm_message_get_sequence_number(message) == sequence_number) {
-      // Found correct message! This message can now be popped from the list.
-      if(last_msg == NULL) {
-        // Set the new head to the next message.
-        stack->entries->head = msg->next;
-      } else {
-        last_msg->next = msg->next;
-      }
-      kmp_free(message_list, entry->messages, msg);
-      msg = NULL;
-      --entry->queue_size;
-      --stack->messages_in_use;
-
-      recalculate_ack_resending_threshold(stack, entry->ns_since_last_ack);
-      entry->ns_since_last_ack = 0;
-      break;
-    }
+    entry->messages->head = entry->messages->head->next;
   }
+
+  // Reduce sizes.
+  --entry->queue_size;
+  --stack->messages_in_use;
+
+  recalculate_ack_resending_threshold(stack, entry->ns_since_last_ack);
+  entry->ns_since_last_ack = 0;
 
   if(entry->queue_size == 0) {
     kh_del(entry_map, stack->entries, it);
@@ -157,7 +151,7 @@ pop_message(rcomm_ack_stack_t* stack,
 }
 
 static lrt_rcore_event_t
-push_message(rcomm_ack_stack_t* stack,
+push_message(lrt_rcore_ack_stack_t* stack,
              uint8_t lType,
              uint16_t lProp,
              const lrt_rbp_message_t* message)
@@ -194,7 +188,8 @@ lrt_rcore_ack_stack_remove(lrt_rcore_ack_stack_t* stack,
 {
   return pop_message(stack,
                      rcomm_message_get_litecomm_type(message),
-                     rcomm_message_get_litecomm_property(message));
+                     rcomm_message_get_litecomm_property(message),
+                     rcomm_message_get_sequence_number(message));
 }
 
 lrt_rcore_event_t
@@ -204,8 +199,11 @@ lrt_rcore_ack_stack_tick(lrt_rcore_ack_stack_t* stack,
 {
   khiter_t k;
   rcomm_ack_stack_entry_t* entry = NULL;
+  lrt_rcore_event_t status = LRT_RCORE_OK;
 
-  for(k = kh_begin(stack->entries, k != kh_end(stack->entries); ++k)) {
+  for(k = kh_begin(stack->entries);
+      k != kh_end(stack->entries) && status == LRT_RCORE_OK;
+      ++k) {
     if(kh_exist(stack->entries, k)) {
       // Entry exists, it can be analysed for potential re-sending.
       entry = &kh_val(stack->entries, k);
@@ -215,11 +213,12 @@ lrt_rcore_ack_stack_tick(lrt_rcore_ack_stack_t* stack,
       if(entry->ns_since_last_ack > stack->ack_resending_threshold) {
         // Resend the oldest message from the queue of this entry.
         if(entry->messages->head != NULL) {
-          rcomm_transfer_message(handle, entry->messages->head);
+          status = rcomm_transmit_message(handle, &entry->messages->head->data);
         }
       }
     }
   }
+  return status;
 }
 lrt_rcore_ack_stack_t*
 lrt_rcore_ack_stack_init(size_t stack_size,
@@ -231,9 +230,23 @@ lrt_rcore_ack_stack_init(size_t stack_size,
   stack->maximum_queue_size = maximum_queue_size;
   stack->maximum_entries_in_use = maximum_stack_size;
 
-  stack->ack stack->ack_ns_avg = 10;
+  stack->ack_ns_avg = 10;
 
   stack->entries = kh_init(entry_map);
 
   return stack;
+}
+
+void
+lrt_rcore_ack_stack_free(lrt_rcore_ack_stack_t* stack)
+{
+  khiter_t k;
+  if(stack->entries != NULL) {
+    for(k = kh_begin(stack->entries); k != kh_end(stack->entries); ++k) {
+      if(kh_exist(stack->entries, k)) {
+        free_stack_entry(&kh_val(stack->entries, k));
+      }
+    }
+  }
+  kh_destroy(entry_map, stack->entries);
 }

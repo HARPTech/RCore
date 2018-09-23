@@ -100,12 +100,22 @@ get_next_expected_sequence_number(int16_t sequence_number)
 }
 
 static lrt_rcore_event_t
+send_ack_from_message(lrt_rbp_message_t* msg, rcomm_handle_t* handle)
+{
+  msg->length = 7;
+  rcomm_message_set_flag(msg, LRT_LIBRSP_ACK, true);
+  return rcomm_transmit_message(handle, msg);
+}
+
+static lrt_rcore_event_t
 search_stack_and_insert(lrt_rcore_sequence_stack_t* stack,
                         lrt_rbp_message_t* message,
                         rcomm_accept_block_cb acceptor,
                         void* acceptor_userdata,
                         rcomm_handle_t* handle)
 {
+  lrt_rcore_event_t status = LRT_RCORE_OK;
+
   /* Try to find the entry in the stack's hash-map or create a new one. Streams
    * have to have a start and an end.*/
   LRT_LIBRCORE_HASHTABLE_KEY_TYPE key = lrt__hashtable_key_from_property(
@@ -160,7 +170,22 @@ search_stack_and_insert(lrt_rcore_sequence_stack_t* stack,
     entry->expected_sequence_number =
       get_next_expected_sequence_number(sequence_number);
 
-    return acceptor(message, acceptor_userdata);
+    status = acceptor(message, acceptor_userdata);
+
+    if(status == LRT_RCORE_OK) {
+      status = send_ack_from_message(message, handle);
+    }
+
+    return status;
+  }
+
+  if(sequence_number < entry->expected_sequence_number) {
+    // This can happen if an old ACK was dropped. In this case, another ACK is
+    // sent and nothing else is done.
+    if(status == LRT_RCORE_OK) {
+      status = send_ack_from_message(message, handle);
+    }
+    return status;
   }
 
   // Sequence number mismatch! Maybe a message was dropped or they were
@@ -208,7 +233,6 @@ search_stack_and_insert(lrt_rcore_sequence_stack_t* stack,
 
   // Check the newly arranged list if it is correct enough to extract fully
   // formed messages from it.
-  lrt_rcore_event_t status = LRT_RCORE_OK;
 
   for(p = entry->messages->head;
       p != entry->messages->tail &&
@@ -234,6 +258,10 @@ search_stack_and_insert(lrt_rcore_sequence_stack_t* stack,
       get_next_expected_sequence_number(sequence_number);
 
     status = acceptor(msg, acceptor_userdata);
+
+    if(status == LRT_RCORE_OK) {
+      status = send_ack_from_message(msg, handle);
+    }
 
     if(rcomm_message_has_flag(msg, LRT_LIBRSP_STREAM_END)) {
       // The ending message has just been popped! This means, this stream is

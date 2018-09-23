@@ -55,7 +55,6 @@ TEST_CASE("Parsing bytes with rcomm", "[rcore]")
     REQUIRE(rcomm_parse_bytes(handle, data, 10) == LRT_RCORE_OK);
 
     REQUIRE(handle->incoming_message.length == 7);
-    REQUIRE(handle->incoming_message.data[0] == 0b01100000);
 
     REQUIRE(handle->incoming_buffer[0] == 0b10000000);
     REQUIRE(handle->incoming_buffer[1] == 0b01010101);

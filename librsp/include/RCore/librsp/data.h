@@ -25,20 +25,27 @@ extern "C"
     return 5;
   }
 
+  inline size_t rcomm_message_get_trailing_size(
+    const lrt_rbp_message_t* message)
+  {
+    if(lrt_rbp_message_check_config(message,
+                                    LRT_RBP_MESSAGE_CONFIG_ENABLE_CRC8)) {
+      return 1;
+    }
+    if(lrt_rbp_message_check_config(message,
+                                    LRT_RBP_MESSAGE_CONFIG_ENABLE_CRC32)) {
+      return 4;
+    }
+    return 0;
+  }
+
   /**
    * Return the maximum size of the data segment in this message.
    */
   inline size_t rcomm_message_get_data_size(const lrt_rbp_message_t* message)
   {
     size_t size = message->_memory - rcomm_message_get_data_offset(message);
-    if(lrt_rbp_message_check_config(message,
-                                    LRT_RBP_MESSAGE_CONFIG_ENABLE_CRC8)) {
-      size -= 1;
-    }
-    if(lrt_rbp_message_check_config(message,
-                                    LRT_RBP_MESSAGE_CONFIG_ENABLE_CRC32)) {
-      size -= 4;
-    }
+    size -= rcomm_message_get_trailing_size(message);
     return size;
   }
 
@@ -60,7 +67,8 @@ extern "C"
            data + offset,
            size);
     // The new message length is equal to the amount of bytes copied.
-    message->length = size;
+    message->length = rcomm_message_get_data_offset(message) + size +
+                      rcomm_message_get_trailing_size(message);
 
     return size + offset;
   }

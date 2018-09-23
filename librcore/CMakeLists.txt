@@ -30,4 +30,5 @@ target_link_libraries(rcore${LIBRARY_SUFFIX} klib)
 
 # Tests
 if(BUILD_TESTS)
+    add_subdirectory(test)
 endif()

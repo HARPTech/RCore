@@ -1,36 +1,23 @@
 #ifndef LRT_RCORE_UTIL_HPP
 #define LRT_RCORE_UTIL_HPP
 
-#if defined(__cplusplus) && !defined(DISABLE_ADVANCED_CPP)
-#define LRT_RCOMM_PTR(sPREFIX, sPREFIX_UPPER)                            \
-  namespace lrt {                                                        \
-  namespace RCore {                                                      \
-  using sPREFIX_UPPER##HandlePtr =                                       \
-    std::unique_ptr<sPREFIX##_handle_t,                                  \
-                    void (*)(sPREFIX##_handle_t * handle)>;              \
-  inline sPREFIX_UPPER##HandlePtr Create##sPREFIX_UPPER##HandlePtr()     \
-  {                                                                      \
-    auto handle = sPREFIX_UPPER##HandlePtr(rcomm_create(), &rcomm_free); \
-    sPREFIX##_init(handle.get());                                        \
-    return handle;                                                       \
-  }                                                                      \
-  }                                                                      \
-  }
-#else
-#define LRT_RCOMM_PTR(sPREFIX, sPREFIX_UPPER)
-#endif
+#include "defaults.h"
 
 #if defined(__cplusplus) && !defined(DISABLE_ADVANCED_CPP)
-#define LRT_RCOMM_PTR_DEF(sPREFIX, sPREFIX_UPPER)           \
-  namespace lrt {                                           \
-  namespace RCore {                                         \
-  using sPREFIX_UPPER##HandlePtr =                          \
-    std::unique_ptr<sPREFIX##_handle_t,                     \
-                    void (*)(sPREFIX##_handle_t * handle)>; \
-  }                                                         \
-  }
-#else
-#define LRT_RCOMM_PTR_DEF(sPREFIX, sPREFIX_UPPER)
+namespace lrt {
+namespace RCore {
+using RCommHandlePtr =
+  std::unique_ptr<rcomm_handle_t, void (*)(rcomm_handle_t* handle)>;
+inline RCommHandlePtr
+CreateRCommHandlePtr()
+{
+  auto handle = RCommHandlePtr(
+    rcomm_handle_create_from_config(lrt_rcore_rcomm_universal_defaults),
+    &rcomm_free);
+  return handle;
+}
+}
+}
 #endif
 
 #endif

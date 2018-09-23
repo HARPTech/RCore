@@ -226,6 +226,8 @@ lrt_rcore_ack_stack_init(size_t stack_size,
                          size_t maximum_queue_size,
                          size_t ack_ns_avg_sampling_rate)
 {
+  assert(stack_size < maximum_stack_size);
+
   lrt_rcore_ack_stack_t* stack = calloc(sizeof(lrt_rcore_ack_stack_t), 1);
   stack->maximum_queue_size = maximum_queue_size;
   stack->maximum_entries_in_use = maximum_stack_size;

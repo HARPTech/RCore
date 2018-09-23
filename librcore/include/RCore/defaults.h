@@ -2,7 +2,6 @@
 #define LRT_LIBRCORE_DEFAULTS_H
 
 #include "rcomm.h"
-#include "util.hpp"
 
 #ifdef __cplusplus
 extern "C"

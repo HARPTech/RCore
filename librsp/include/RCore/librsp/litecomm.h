@@ -44,7 +44,7 @@ extern "C"
   {
     assert(message->data != NULL);
     assert(message->_memory >= 3);
-    message->data[2] = (message->data[2] & 0x0Fu) | (type << 4u);
+    message->data[2] = (message->data[2] & 0x0Fu) | ((type & 0x0Fu) << 4u);
   }
 
   inline uint16_t rcomm_message_get_litecomm_property(
@@ -64,7 +64,8 @@ extern "C"
   {
     assert(message->data != NULL);
     assert(message->_memory >= 3);
-    message->data[2] = (message->data[2] & 0xF0u) | (property >> 8u);
+    message->data[2] =
+      (message->data[2] & 0xF0u) | ((property & 0x0F00u) >> 8u);
     message->data[3] = property & 0xFF;
   }
 

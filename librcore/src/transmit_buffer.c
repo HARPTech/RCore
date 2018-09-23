@@ -1,6 +1,6 @@
 #include "../include/RCore/transmit_buffer.h"
-#include "../include/RCore/internal/hashtable.h"
 #include "../../librsp/include/RCore/librsp/flags.h"
+#include "../include/RCore/internal/hashtable.h"
 #include <RCore/librcp/message.h>
 #include <assert.h>
 #include <klib/khash.h>
@@ -149,14 +149,16 @@ lrt_rcore_transmit_buffer_reserve(lrt_rcore_transmit_buffer_t* handle,
 }
 
 void
-lrt_rcore_transmit_buffer_receive_data_byte(lrt_rcore_transmit_buffer_t* handle,
-                                            uint8_t type,
-                                            uint16_t property,
-                                            uint8_t streamBits,
-                                            uint8_t byte,
-                                            lrt_rcp_message_type_t messageType,
-                                            bool reliable,
-                                            uint16_t seq_number)
+lrt_rcore_transmit_buffer_receive_data_bytes(
+  lrt_rcore_transmit_buffer_t* handle,
+  uint8_t type,
+  uint16_t property,
+  uint8_t streamBits,
+  uint8_t* bytes,
+  size_t length,
+  lrt_rcp_message_type_t messageType,
+  bool reliable,
+  uint16_t seq_number)
 {
   struct lrt_rcore_transmit_buffer_entry_t* entry =
     get_or_create_entry(handle,
@@ -178,11 +180,12 @@ lrt_rcore_transmit_buffer_receive_data_byte(lrt_rcore_transmit_buffer_t* handle,
 
   // Insert new byte.
   assert(entry->data->l <= entry->data->m);
-  kputc(byte, entry->data);
+  ks_resize(entry->data, entry->data->l + length);
+  memcpy(entry->data + entry->data->l, bytes, length);
   assert(entry->data->l <= entry->data->m);
 
-  // Check if this is the last bit (the sEnd flag is set), which would make this
-  // message ready to be given to the callback and the entry to be free'd.
+  // Check if this is the last section (the sEnd flag is set), which would make
+  // this message ready to be given to the callback and the entry to be free'd.
   if(streamBits & LRT_LIBRSP_STREAM_END) {
     handle->finished_cb(entry, handle->finished_cb_userdata);
 
@@ -203,6 +206,27 @@ lrt_rcore_transmit_buffer_receive_data_byte(lrt_rcore_transmit_buffer_t* handle,
 
     kh_del_lrt_rcore_transmit_buffer_hashmap(handle->incoming, it);
   }
+}
+
+void
+lrt_rcore_transmit_buffer_receive_data_byte(lrt_rcore_transmit_buffer_t* handle,
+                                            uint8_t type,
+                                            uint16_t property,
+                                            uint8_t streamBits,
+                                            uint8_t byte,
+                                            lrt_rcp_message_type_t messageType,
+                                            bool reliable,
+                                            uint16_t seq_number)
+{
+  lrt_rcore_transmit_buffer_receive_data_bytes(handle,
+                                               type,
+                                               property,
+                                               streamBits,
+                                               &byte,
+                                               1,
+                                               messageType,
+                                               reliable,
+                                               seq_number);
 }
 
 void

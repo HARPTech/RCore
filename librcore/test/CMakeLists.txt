@@ -1,11 +1,11 @@
 # Variables defining the test.
-set(TEST_NAME rsp-test)
+set(TEST_NAME rcore-test)
 set(TEST_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/test-flags.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test-litecomm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test-data.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test-rcomm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test-sequence-stack.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test-ack-stack.cpp
     )
-set(TEST_LIBS rsp)
+set(TEST_LIBS rcore)
 
 # Here begins the setup of the test.
 add_library(${TEST_NAME} SHARED ${TEST_SRCS})

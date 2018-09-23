@@ -9,6 +9,8 @@ TEST_CASE("Block initialisation", "[rbp]")
   REQUIRE(message.data != nullptr);
   REQUIRE(message.length == 0);
   REQUIRE(message._memory == 14);
+
+  lrt_rbp_message_free_internal(&message);
 }
 
 TEST_CASE("Encode and decode message blocks", "[rbp]")
@@ -45,6 +47,8 @@ TEST_CASE("Encode and decode message blocks", "[rbp]")
 
   for(size_t i = 0; i < 6; ++i)
     REQUIRE((int)message.data[i] == (int)data_model[i]);
+
+  lrt_rbp_message_free_internal(&message);
 }
 
 TEST_CASE("Check block validity", "[rbp]")

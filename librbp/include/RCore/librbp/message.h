@@ -17,7 +17,8 @@ extern "C"
 #include <string.h>
 
 #define LRT_LIBRBP_BLOCK_START_BIT 0b10000000u
-#define LRT_LIBRBP_MESSAGE_LIST_FREER(MSG) lrt_rbp_message_free(&MSG->data)
+#define LRT_LIBRBP_MESSAGE_LIST_FREER(MSG) \
+  lrt_rbp_message_free_internal(&MSG->data)
 #define LRT_LIBRBP_MESSAGE_FREER(MSG) lrt_rbp_message_free(MSG)
 
   typedef uint8_t lrt_rbp_message_data_element;
@@ -59,7 +60,7 @@ extern "C"
                             size_t default_reserved_memory,
                             lrt_rbp_message_config_type config);
 
-  void lrt_rbp_message_free_internal(lrt_rbp_message_t *message);
+  void lrt_rbp_message_free_internal(lrt_rbp_message_t* message);
 
   void lrt_rbp_message_free(lrt_rbp_message_t* message);
 
@@ -71,7 +72,6 @@ extern "C"
   {
     assert(target != NULL);
     assert(source != NULL);
-    assert(target->data != NULL);
     assert(source->data != NULL);
 
     if(target->_memory < source->length) {

@@ -43,7 +43,6 @@ void
 lrt_rbp_message_free(lrt_rbp_message_t* message)
 {
   assert(message != NULL);
-  assert(message->data != NULL);
 
   lrt_rbp_message_free_internal(message);
 
@@ -57,6 +56,19 @@ lrt_rbp_message_resize(lrt_rbp_message_t* message, size_t target_length)
     message->length = target_length;
     return LRT_RCORE_OK;
   }
+
+  // Allocate a new buffer if this has not been done before.
+  if(message->data == NULL) {
+    message->data = calloc(sizeof(lrt_rbp_message_data_element), target_length);
+
+    if(message->data == NULL) {
+      return LRT_RCORE_ALLOC_FAILED;
+    }
+
+    message->_memory = target_length;
+    return LRT_RCORE_OK;
+  }
+
   // Resize the buffer.
   lrt_rbp_message_data_element* data = realloc(
     message->data, sizeof(lrt_rbp_message_data_element) * target_length);
@@ -105,10 +117,11 @@ lrt_rbp_decode_message(lrt_rbp_message_t* msg,
 {
   assert(msg != NULL);
 
-  lrt_rbp_message_resize(
-    msg, lrt_rbp_message_length_from_buffer_length(buffer_length));
+  msg->length = lrt_rbp_message_length_from_buffer_length(buffer_length);
 
-  for(size_t i = 0; i < buffer_length; ++i) {
+  lrt_rbp_message_resize(msg, msg->length);
+
+  for(size_t i = 0; i < msg->length; ++i) {
     msg->data[i] =
       (uint8_t)((uint8_t)((buffer[i + (i / 7U)] & (0xFFU >> ((i % 7U) + 1U)))
                           << ((i % 7U) + 1U)) |

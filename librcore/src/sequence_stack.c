@@ -38,10 +38,17 @@ typedef struct lrt_rcore_sequence_stack_t
 } lrt_rcore_sequence_stack_t;
 
 lrt_rcore_sequence_stack_t*
-lrt_rcore_sequence_stack_init()
+lrt_rcore_sequence_stack_init(size_t maximum_entries_in_use,
+                              size_t maximum_queue_size)
 {
   lrt_rcore_sequence_stack_t* stack =
     calloc(sizeof(lrt_rcore_sequence_stack_t), 1);
+
+  stack->entries = kh_init(entry_map);
+
+  stack->maximum_entries_in_use = maximum_entries_in_use;
+  stack->maximum_queue_size = maximum_queue_size;
+
   return stack;
 }
 
@@ -57,6 +64,8 @@ lrt_rcore_sequence_stack_free(lrt_rcore_sequence_stack_t* stack)
     }
   }
   kh_destroy(entry_map, stack->entries);
+
+  free(stack);
 }
 
 static void
@@ -110,9 +119,26 @@ search_stack_and_insert(lrt_rcore_sequence_stack_t* stack,
     // is space left.
     int ret = 0;
     it = kh_put(entry_map, stack->entries, key, &ret);
-    if(ret == -1) {
-      return LRT_RCORE_STACK_FULL;
+    switch(ret) {
+      case -1:
+        return LRT_RCORE_STACK_FULL;
+      case 0:
+        // Already present.
+        break;
+      case 1: {
+        // Never used. Initialise it with zeroes.
+        lrt_rcore_sequence_stack_entry_t* e = &kh_val(stack->entries, it);
+        e->expected_sequence_number = 0;
+        e->messages = NULL;
+        e->queue_size = 0;
+        // Fall through to case 2, which is a reuse. No break needed.
+      }
+      case 2:
+        // Reuse previously initialised entry.
+        init_stack_entry(&kh_val(stack->entries, it));
+        break;
     }
+    ++stack->entries_in_use;
   }
 
   // The entry has been found, stream processing can start.
@@ -148,6 +174,7 @@ search_stack_and_insert(lrt_rcore_sequence_stack_t* stack,
   }
 
   ++entry->queue_size;
+  ++stack->messages_in_use;
 
   // Search for (logical) last message in the internal list of messages.
   kliter_t(message_list) * p;
@@ -201,6 +228,7 @@ search_stack_and_insert(lrt_rcore_sequence_stack_t* stack,
 
     // Queue size is reduced by 1.
     --entry->queue_size;
+    --stack->messages_in_use;
 
     entry->expected_sequence_number =
       get_next_expected_sequence_number(sequence_number);
@@ -213,6 +241,7 @@ search_stack_and_insert(lrt_rcore_sequence_stack_t* stack,
 
       init_stack_entry(entry);
       kh_del(entry_map, stack->entries, it);
+      --stack->entries_in_use;
 
       break;
     }
@@ -243,4 +272,14 @@ lrt_rcore_sequence_stack_handle_message(lrt_rcore_sequence_stack_t* stack,
       break;
   }
   return LRT_RCORE_OK;
+}
+size_t
+lrt_rcore_sequence_stack_get_entries_in_use(lrt_rcore_sequence_stack_t* stack)
+{
+  return stack->entries_in_use;
+}
+size_t
+lrt_rcore_sequence_stack_get_messages_in_use(lrt_rcore_sequence_stack_t* stack)
+{
+  return stack->messages_in_use;
 }

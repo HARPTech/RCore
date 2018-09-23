@@ -88,18 +88,28 @@ get_or_create_entry_from_stack(lrt_rcore_ack_stack_t* stack,
     if(stack->entries_in_use < stack->maximum_entries_in_use) {
       int ret = 0;
       it = kh_put(entry_map, stack->entries, key, &ret);
-      if(ret == -1) {
-        return NULL;
+      switch(ret) {
+        case -1:
+          return NULL;
+        case 0:
+          // Already present.
+          break;
+        case 1: {
+          // Never used. Initialise it with zeroes.
+          rcomm_ack_stack_entry_t* e = &kh_val(stack->entries, it);
+          e->messages = NULL;
+          e->queue_size = 0;
+          // Fall through to case 2, which is a reuse. No break needed.
+        }
+        case 2:
+          // Reuse previously initialised entry.
+          init_stack_entry(&kh_val(stack->entries, it));
+          break;
       }
-
-      rcomm_ack_stack_entry_t* entry = &kh_val(stack->entries, it);
-
-      // Initiaze the entry before returning it.
-      init_stack_entry(entry);
 
       ++stack->entries_in_use;
 
-      return entry;
+      return &kh_val(stack->entries, it);
     } else {
       return NULL;
     }
@@ -251,4 +261,6 @@ lrt_rcore_ack_stack_free(lrt_rcore_ack_stack_t* stack)
     }
   }
   kh_destroy(entry_map, stack->entries);
+
+  free(stack);
 }

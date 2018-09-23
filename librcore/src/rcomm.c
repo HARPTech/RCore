@@ -14,7 +14,8 @@ rcomm_init(rcomm_handle_t* handle,
     &handle->outgoing_message, message_default_reserved_memory, message_config);
   handle->ack_stack = lrt_rcore_ack_stack_init(
     maximum_stack_size / 2, maximum_stack_size, maximum_queue_size, 20);
-  handle->sequence_stack = lrt_rcore_sequence_stack_init();
+  handle->sequence_stack =
+    lrt_rcore_sequence_stack_init(maximum_stack_size, maximum_queue_size);
   handle->transmit_userdata = NULL;
   handle->accept_userdata = NULL;
   handle->accept = NULL;

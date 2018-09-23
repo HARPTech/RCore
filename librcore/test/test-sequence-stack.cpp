@@ -5,7 +5,7 @@
 
 TEST_CASE("Initialising and using sequence_stack", "[rcore]")
 {
-  lrt_rcore_sequence_stack_t* stack = lrt_rcore_sequence_stack_init();
+  lrt_rcore_sequence_stack_t* stack = lrt_rcore_sequence_stack_init(10, 10);
 
   REQUIRE(stack != NULL);
 

@@ -92,39 +92,40 @@ get_or_create_entry(lrt_rcore_transmit_buffer_t* origin,
                     khash_t(lrt_rcore_transmit_buffer_hashmap) * map,
                     LRT_LIBRCORE_HASHTABLE_KEY_TYPE key)
 {
-  khint_t it = kh_get_lrt_rcore_transmit_buffer_hashmap(map, key);
+  int ret = 0;
+  khint_t it = kh_put_lrt_rcore_transmit_buffer_hashmap(map, key, &ret);
 
-  if(it == kh_end(map)) {
-    int ret = 0;
-    it = kh_put_lrt_rcore_transmit_buffer_hashmap(map, key, &ret);
+  struct lrt_rcore_transmit_buffer_entry_t* entry = NULL;
 
-    if(ret == -1) {
-      return 0;
-    }
-
-    struct lrt_rcore_transmit_buffer_entry_t* entry = &kh_val(map, it);
-    entry->data = kmp_alloc_lrt_rcore_transmit_buffer_string_mempool(mp);
-    entry->data->l = 0;
-
-    assert(entry->data != 0);
-    assert(entry->data->m >= 0);
-
-    entry->origin = origin;
-    entry->reliable = true;
-    entry->type = 0;
-    entry->property = 0;
-    entry->message_type = 0;
-    entry->transmit_offset = 0;
-    entry->seq_number = 0;
-    return entry;
+  switch(ret) {
+    case -1:
+      return NULL;
+    case 0:
+      // Already present.
+      entry = &kh_val(map, it);
+      return entry;
+    case 1:
+      // Never used. Has to be initialised.
+      entry = &kh_val(map, it);
+      entry->data = kmp_alloc_lrt_rcore_transmit_buffer_string_mempool(mp);
+      break;
+    case 2:
+      // Reuse previous entry.
+      entry = &kh_val(map, it);
+      break;
   }
 
-  struct lrt_rcore_transmit_buffer_entry_t* entry = &kh_val(map, it);
+  assert(entry->data != 0);
+  assert(entry->data->m >= 0);
 
-  if(entry->data == NULL) {
-    entry->data = kmp_alloc_lrt_rcore_transmit_buffer_string_mempool(mp);
-  }
-
+  entry->data->l = 0;
+  entry->origin = origin;
+  entry->reliable = true;
+  entry->type = 0;
+  entry->property = 0;
+  entry->message_type = 0;
+  entry->transmit_offset = 0;
+  entry->seq_number = 0;
   return entry;
 }
 
@@ -148,7 +149,7 @@ lrt_rcore_transmit_buffer_reserve(lrt_rcore_transmit_buffer_t* handle,
   ks_resize(entry->data, ks_len(entry->data) + length);
 }
 
-void
+lrt_rcore_event_t
 lrt_rcore_transmit_buffer_receive_data_bytes(
   lrt_rcore_transmit_buffer_t* handle,
   uint8_t type,
@@ -178,22 +179,23 @@ lrt_rcore_transmit_buffer_receive_data_bytes(
   entry->reliable = reliable;
   entry->seq_number = seq_number;
 
-  // Insert new byte.
+  // Insert new bytes.
   assert(entry->data->l <= entry->data->m);
   ks_resize(entry->data, entry->data->l + length);
-  memcpy(entry->data + entry->data->l, bytes, length);
+
+  memcpy(entry->data->s + entry->data->l, bytes, length);
   assert(entry->data->l <= entry->data->m);
 
-  // Check if this is the last section (the sEnd flag is set), which would make
-  // this message ready to be given to the callback and the entry to be free'd.
+  entry->data->l += length;
+  assert(entry->data->l <= entry->data->m);
+
+  // Check if this is the last section (the sEnd flag is set), which would
+  // make this message ready to be given to the callback and the entry to be
+  // free'd.
   if(streamBits & LRT_LIBRSP_STREAM_END) {
     handle->finished_cb(entry, handle->finished_cb_userdata);
 
     entry->data->l = 0;
-
-    kmp_free_lrt_rcore_transmit_buffer_string_mempool(handle->memory_pool,
-                                                      entry->data);
-    entry->data = NULL;
 
     // Free the entry.
     khint_t it = kh_get_lrt_rcore_transmit_buffer_hashmap(
@@ -201,14 +203,16 @@ lrt_rcore_transmit_buffer_receive_data_bytes(
       lrt__hashtable_key_from_property(entry->type, entry->property));
 
     if(it == kh_end(handle->outgoing)) {
-      return;
+      return LRT_RCORE_INVALID_TRANSMIT_BUFFER_ENTRY;
     }
 
     kh_del_lrt_rcore_transmit_buffer_hashmap(handle->incoming, it);
   }
+
+  return LRT_RCORE_OK;
 }
 
-void
+lrt_rcore_event_t
 lrt_rcore_transmit_buffer_receive_data_byte(lrt_rcore_transmit_buffer_t* handle,
                                             uint8_t type,
                                             uint16_t property,
@@ -218,15 +222,15 @@ lrt_rcore_transmit_buffer_receive_data_byte(lrt_rcore_transmit_buffer_t* handle,
                                             bool reliable,
                                             uint16_t seq_number)
 {
-  lrt_rcore_transmit_buffer_receive_data_bytes(handle,
-                                               type,
-                                               property,
-                                               streamBits,
-                                               &byte,
-                                               1,
-                                               messageType,
-                                               reliable,
-                                               seq_number);
+  return lrt_rcore_transmit_buffer_receive_data_bytes(handle,
+                                                      type,
+                                                      property,
+                                                      streamBits,
+                                                      &byte,
+                                                      1,
+                                                      messageType,
+                                                      reliable,
+                                                      seq_number);
 }
 
 void
@@ -248,7 +252,7 @@ lrt_rcore_transmit_buffer_set_data_ready_cb(
   handle->data_ready_cb = cb;
 }
 
-void
+lrt_rcore_event_t
 lrt_rcore_transmit_buffer_send_ctrl(lrt_rcore_transmit_buffer_t* handle,
                                     uint8_t type,
                                     uint16_t property,
@@ -262,7 +266,7 @@ lrt_rcore_transmit_buffer_send_ctrl(lrt_rcore_transmit_buffer_t* handle,
                         lrt__hashtable_key_from_property(type, property));
 
   if(entry == 0) {
-    return;
+    return LRT_RCORE_INVALID_TRANSMIT_BUFFER_ENTRY;
   }
 
   // Nothing needs to be resized, the data is only shortened to 1 pseudo-byte.
@@ -280,7 +284,7 @@ lrt_rcore_transmit_buffer_send_ctrl(lrt_rcore_transmit_buffer_t* handle,
   entry->seq_number = handle->seq_num_counter++;
   entry->message_type = message_type;
 
-  handle->data_ready_cb(entry, handle->data_ready_cb_userdata);
+  return handle->data_ready_cb(entry, handle->data_ready_cb_userdata);
 }
 
 void
@@ -297,14 +301,10 @@ lrt_rcore_transmit_buffer_free_send_slot(
   }
 
   entry->data->l = 0;
-  kmp_free_lrt_rcore_transmit_buffer_string_mempool(handle->memory_pool,
-                                                    entry->data);
-  entry->data = NULL;
-
   kh_del_lrt_rcore_transmit_buffer_hashmap(handle->outgoing, it);
 }
 
-void
+lrt_rcore_event_t
 lrt_rcore_transmit_buffer_send_data(lrt_rcore_transmit_buffer_t* handle,
                                     uint8_t type,
                                     uint16_t property,
@@ -319,7 +319,7 @@ lrt_rcore_transmit_buffer_send_data(lrt_rcore_transmit_buffer_t* handle,
                         lrt__hashtable_key_from_property(type, property));
 
   if(entry == 0) {
-    return;
+    return LRT_RCORE_INVALID_TRANSMIT_BUFFER_ENTRY;
   }
 
   ks_resize(entry->data, length);
@@ -345,11 +345,11 @@ lrt_rcore_transmit_buffer_send_data(lrt_rcore_transmit_buffer_t* handle,
   assert(entry->data != 0);
   assert(entry->data->l != 0);
   assert(entry->transmit_offset == 0);
-  handle->data_ready_cb(entry, handle->data_ready_cb_userdata);
+  return handle->data_ready_cb(entry, handle->data_ready_cb_userdata);
 }
 
 #define LRT_RCORE_TRANSMITBUFFER_SEND_TYPE_IMPL(sTYPE, tTYPE)  \
-  void lrt_rcore_transmit_buffer_send_##sTYPE(                 \
+  lrt_rcore_event_t lrt_rcore_transmit_buffer_send_##sTYPE(    \
     lrt_rcore_transmit_buffer_t* handle,                       \
     uint8_t type,                                              \
     uint16_t property,                                         \
@@ -357,7 +357,7 @@ lrt_rcore_transmit_buffer_send_data(lrt_rcore_transmit_buffer_t* handle,
     bool reliable)                                             \
   {                                                            \
     const uint8_t* data = lrt_librcp_##sTYPE##_to_data(value); \
-    lrt_rcore_transmit_buffer_send_data(                       \
+    return lrt_rcore_transmit_buffer_send_data(                \
       handle, type, property, data, sizeof(tTYPE), reliable);  \
   }
 

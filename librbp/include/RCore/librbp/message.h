@@ -135,8 +135,9 @@ extern "C"
    * lrt_rbp_decode_message.
    *
    * Validation is based on length and content of the buffer. */
-  bool lrt_rbp_is_block_valid(const lrt_rbp_message_data_element* buffer,
-                              size_t length);
+  lrt_rcore_event_t lrt_rbp_is_block_valid(
+    const lrt_rbp_message_data_element* buffer,
+    size_t length);
 
 #ifdef __cplusplus
 }// closing brace for extern "C"

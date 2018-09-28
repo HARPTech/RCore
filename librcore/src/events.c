@@ -18,5 +18,10 @@ const char* lrt_rcore_event_names[LRT_RCORE_EVENT_COUNT] = {
   "[Generic] Transmitter error",
   "Not accepted",
   "Not subscribed",
-  "[Transmit Buffer] Invalid entry"
+  "[Transmit Buffer] Invalid entry",
+
+  "[Block] Too short",
+  "[Block] Not dividable by 8",
+  "[Block] No start bit",
+  "[Block] Start bit inside message",
 };

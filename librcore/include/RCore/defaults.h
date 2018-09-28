@@ -18,7 +18,7 @@ extern "C"
   } lrt_rcore_rcomm_config_t;
 
   const lrt_rcore_rcomm_config_t lrt_rcore_rcomm_universal_defaults =
-    { 14, 14, 8, 8, LRT_RBP_MESSAGE_CONFIG_ENABLE_CRC8 };
+    { 14, 16, 8, 8, LRT_RBP_MESSAGE_CONFIG_ENABLE_CRC8 };
 
   rcomm_handle_t* rcomm_handle_create_from_config(
     lrt_rcore_rcomm_config_t config);

@@ -69,7 +69,7 @@ extern "C"
                                          uint16_t property,
                                          size_t length);
 
-  void lrt_rcore_transmit_buffer_receive_data_byte(
+  lrt_rcore_event_t lrt_rcore_transmit_buffer_receive_data_byte(
     lrt_rcore_transmit_buffer_t* handle,
     uint8_t type,
     uint16_t property,
@@ -79,7 +79,7 @@ extern "C"
     bool reliable,
     uint16_t seq_number);
 
-  void lrt_rcore_transmit_buffer_receive_data_bytes(
+  lrt_rcore_event_t lrt_rcore_transmit_buffer_receive_data_bytes(
     lrt_rcore_transmit_buffer_t* handle,
     uint8_t type,
     uint16_t property,
@@ -94,25 +94,27 @@ extern "C"
     lrt_rcore_transmit_buffer_t* handle,
     lrt_rcore_transmit_buffer_entry_t* entry);
 
-  void lrt_rcore_transmit_buffer_send_ctrl(lrt_rcore_transmit_buffer_t* handle,
-                                           uint8_t type,
-                                           uint16_t property,
-                                           lrt_rcp_message_type_t message_type,
-                                           bool reliable);
+  lrt_rcore_event_t lrt_rcore_transmit_buffer_send_ctrl(
+    lrt_rcore_transmit_buffer_t* handle,
+    uint8_t type,
+    uint16_t property,
+    lrt_rcp_message_type_t message_type,
+    bool reliable);
 
-  void lrt_rcore_transmit_buffer_send_data(lrt_rcore_transmit_buffer_t* handle,
-                                           uint8_t type,
-                                           uint16_t property,
-                                           const uint8_t* data,
-                                           size_t length,
-                                           bool reliable);
+  lrt_rcore_event_t lrt_rcore_transmit_buffer_send_data(
+    lrt_rcore_transmit_buffer_t* handle,
+    uint8_t type,
+    uint16_t property,
+    const uint8_t* data,
+    size_t length,
+    bool reliable);
 
-#define LRT_RCORE_TRANSMITBUFFER_SEND_TYPE(sTYPE, tTYPE) \
-  void lrt_rcore_transmit_buffer_send_##sTYPE(           \
-    lrt_rcore_transmit_buffer_t* handle,                 \
-    uint8_t type,                                        \
-    uint16_t property,                                   \
-    tTYPE value,                                         \
+#define LRT_RCORE_TRANSMITBUFFER_SEND_TYPE(sTYPE, tTYPE)    \
+  lrt_rcore_event_t lrt_rcore_transmit_buffer_send_##sTYPE( \
+    lrt_rcore_transmit_buffer_t* handle,                    \
+    uint8_t type,                                           \
+    uint16_t property,                                      \
+    tTYPE value,                                            \
     bool reliable);
 
   LRT_RCORE_TRANSMITBUFFER_SEND_TYPE(Bool, bool)

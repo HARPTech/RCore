@@ -4,7 +4,8 @@
 TEST_CASE("Block initialisation", "[rbp]")
 {
   lrt_rbp_message_t message;
-  lrt_rbp_message_init(&message, lrt_rbp_message_length_from_buffer_length(16), 0);
+  lrt_rbp_message_init(
+    &message, lrt_rbp_message_length_from_buffer_length(16), 0);
 
   REQUIRE(message.data != nullptr);
   REQUIRE(message.length == 0);
@@ -16,7 +17,8 @@ TEST_CASE("Block initialisation", "[rbp]")
 TEST_CASE("Encode and decode message blocks", "[rbp]")
 {
   lrt_rbp_message_t message;
-  lrt_rbp_message_init(&message, lrt_rbp_message_length_from_buffer_length(16), 0);
+  lrt_rbp_message_init(
+    &message, lrt_rbp_message_length_from_buffer_length(16), 0);
 
   uint8_t data_model[] = { 1u, 15u, 214u, 128u, 0u, 10u };
 
@@ -56,15 +58,17 @@ TEST_CASE("Check block validity", "[rbp]")
   uint8_t block[16] = {
     0b10000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
   };
-  CHECK(lrt_rbp_is_block_valid(block, 16));
+  REQUIRE(lrt_rbp_is_block_valid(block, 16) == LRT_RCORE_OK);
 
   block[2] = 0xFF;
 
-  CHECK(!lrt_rbp_is_block_valid(block, 16));
+  REQUIRE(lrt_rbp_is_block_valid(block, 16) ==
+          LRT_RCORE_BLOCK_START_BIT_INSIDE_MESSAGE);
 
   block[2] = 0;
 
-  CHECK(lrt_rbp_is_block_valid(block, 16));
-  CHECK(!lrt_rbp_is_block_valid(block, 15));
-  CHECK(lrt_rbp_is_block_valid(block, 8));
+  REQUIRE(lrt_rbp_is_block_valid(block, 16) == LRT_RCORE_OK);
+  REQUIRE(lrt_rbp_is_block_valid(block, 15) ==
+          LRT_RCORE_BLOCK_NOT_DIVIDABLE_BY_8);
+  REQUIRE(lrt_rbp_is_block_valid(block, 8) == LRT_RCORE_OK);
 }

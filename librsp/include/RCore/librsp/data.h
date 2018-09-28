@@ -44,6 +44,9 @@ extern "C"
    */
   inline size_t rcomm_message_get_data_size(const lrt_rbp_message_t* message)
   {
+    assert(message != NULL);
+    assert(message->_memory > rcomm_message_get_data_offset(message) +
+                                rcomm_message_get_trailing_size(message));
     size_t size = message->_memory - rcomm_message_get_data_offset(message);
     size -= rcomm_message_get_trailing_size(message);
     return size;

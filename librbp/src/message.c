@@ -94,7 +94,7 @@ lrt_rbp_encode_message(const lrt_rbp_message_t* msg,
   size_t i = 0;
 
   // Prepare the buffer for sending.
-  buffer[0] = 0b10000000;
+  buffer[0] = LRT_LIBRBP_BLOCK_START_BIT;
   for(i = 1; i < buffer_length; ++i) {
     buffer[i] = 0;
   }
@@ -137,22 +137,23 @@ lrt_rbp_decode_message(lrt_rbp_message_t* msg,
   return LRT_RCORE_OK;
 }
 
-bool
+lrt_rcore_event_t
 lrt_rbp_is_block_valid(const uint8_t* buffer, size_t length)
 {
   if(length < 8) {
-    return false;
+    return LRT_RCORE_BLOCK_TOO_SHORT;
   }
+  // The length has to be calculated with a +1 because arrays start at 0.
   if(length % 8 != 0) {
-    return false;
+    return LRT_RCORE_BLOCK_NOT_DIVIDABLE_BY_8;
   }
   if((buffer[0] & LRT_LIBRBP_BLOCK_START_BIT) == 0) {
-    return false;
+    return LRT_RCORE_BLOCK_NO_START_BIT;
   }
   for(size_t i = 1; i < length; ++i) {
     if((buffer[i] & LRT_LIBRBP_BLOCK_START_BIT) != 0) {
-      return false;
+      return LRT_RCORE_BLOCK_START_BIT_INSIDE_MESSAGE;
     }
   }
-  return true;
+  return LRT_RCORE_OK;
 }

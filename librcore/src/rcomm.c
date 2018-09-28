@@ -79,7 +79,7 @@ rcomm_transmit_message(rcomm_handle_t* handle, const lrt_rbp_message_t* message)
 
   // Transmit with the callback.
   status = handle->transmit(
-    message->data,
+    handle->outgoing_buffer,
     handle->transmit_userdata,
     lrt_rbp_buffer_length_from_message_length(message->length));
   return status;
@@ -113,6 +113,14 @@ rcomm_send_tb_entry(rcomm_handle_t* handle,
   assert(entry != 0);
   assert(entry->data != 0);
   assert(entry->data->l != 0);
+  assert(entry->transmit_offset == 0);
+
+  bool finished = lrt_rcore_transmit_buffer_entry_transmit_finished(entry);
+
+  // The entry should not be finished yet.
+  assert(!finished);
+
+  // Prepare outgoing message.
   rcomm_message_set_flag(
     &handle->outgoing_message, LRT_LIBRSP_STREAM_START, true);
   rcomm_message_set_flag(
@@ -122,9 +130,10 @@ rcomm_send_tb_entry(rcomm_handle_t* handle,
                                       entry->property);
   rcomm_set_litecomm_message_type(&handle->outgoing_message,
                                   entry->message_type);
+
+  // Send as many messages as required.
   while(status == LRT_RCORE_OK &&
-        !lrt_rcore_transmit_buffer_entry_transmit_finished(
-          entry)) { /* Each iteration handles a new block to be transmitted. */
+        !finished) { /* Each iteration handles a new block to be transmitted. */
     entry->transmit_offset = rcomm_message_insert_data(
       &handle->outgoing_message,
       (const uint8_t*)entry->data->s,
@@ -132,15 +141,20 @@ rcomm_send_tb_entry(rcomm_handle_t* handle,
       entry->transmit_offset); /* Set rest of block data fields. */
     rcomm_message_set_sequence_number(&handle->outgoing_message,
                                       entry->seq_number);
+
+    finished = lrt_rcore_transmit_buffer_entry_transmit_finished(entry);
+
     rcomm_message_set_flag(
-      &handle->outgoing_message,
-      LRT_LIBRSP_STREAM_END,
-      lrt_rcore_transmit_buffer_entry_transmit_finished(entry));
+      &handle->outgoing_message, LRT_LIBRSP_STREAM_END, finished);
     status = rcomm_send_message(handle, &handle->outgoing_message);
     rcomm_message_set_flag(
       &handle->outgoing_message, LRT_LIBRSP_STREAM_START, false);
   }
-  if(lrt_rcore_transmit_buffer_entry_transmit_finished(entry)) {
+
+  // The entry should be finished by now.
+  assert(finished);
+
+  if(finished) {
     lrt_rcore_transmit_buffer_free_send_slot(entry->origin, entry);
   }
   return status;
@@ -148,11 +162,11 @@ rcomm_send_tb_entry(rcomm_handle_t* handle,
 
 lrt_rcore_event_t
 rcomm_transfer_message_to_tb(rcomm_handle_t* handle,
-                           lrt_rbp_message_t* message,
-                           lrt_rcore_transmit_buffer_t* tb)
+                             lrt_rbp_message_t* message,
+                             lrt_rcore_transmit_buffer_t* tb)
 {
   uint8_t packetTypeBits = rcomm_get_packetTypeBits(message);
-  lrt_rcore_transmit_buffer_receive_data_bytes(
+  return lrt_rcore_transmit_buffer_receive_data_bytes(
     tb,
     rcomm_message_get_litecomm_type(message),
     rcomm_message_get_litecomm_property(message),
@@ -162,19 +176,19 @@ rcomm_transfer_message_to_tb(rcomm_handle_t* handle,
     rcomm_get_litecomm_message_type(message),
     rcomm_message_has_flag(message, LRT_LIBRSP_RELIABLE),
     rcomm_message_get_sequence_number(message));
-  return LRT_RCORE_OK;
 }
 lrt_rcore_event_t
 rcomm_handle_complete_block(rcomm_handle_t* handle)
 {
+  assert(handle != NULL);
   assert(handle->accept != NULL);
 
-  if(!lrt_rbp_is_block_valid(handle->incoming_buffer,
-                             handle->incoming_buffer_size)) {
-    return LRT_RCORE_INVALID_BLOCK;
-  }
+  lrt_rcore_event_t status = lrt_rbp_is_block_valid(
+    handle->incoming_buffer, handle->incoming_buffer_size);
 
-  lrt_rcore_event_t status = LRT_RCORE_OK;
+  if(status != LRT_RCORE_OK) {
+    return status;
+  }
 
   // Decode message.
   status = lrt_rbp_decode_message(&handle->incoming_message,
@@ -223,22 +237,21 @@ rcomm_parse_bytes(rcomm_handle_t* handle, const uint8_t* data, size_t length)
 {
   lrt_rcore_event_t status = LRT_RCORE_OK;
   for(size_t i = 0; i < length; ++i) {
-    if(data[i] &
-       LRT_LIBRBP_BLOCK_START_BIT) { /* Begin of new block, old block can be
-                                        given to next handler. */
+    if((data[i] & LRT_LIBRBP_BLOCK_START_BIT) >
+       0) { /* Begin of new block, old block can be
+          given to next handler. */
       if(handle->incoming_buffer_size > 0 &&
          handle->incoming_buffer_size % 8 ==
            0) { /* Only if the byte counter is dividable by 8, the block would
-                 * \
                  * be discarded otherwise. This makes small blocks possible
-                 * for      \ faster transmissions of small values. */
+                 * for faster transmissions of small values. */
         if(status == LRT_RCORE_OK) {
           status = rcomm_handle_complete_block(handle);
         }
       }
       handle->incoming_buffer_size = 0;
     } else if(handle->incoming_buffer_size ==
-              handle->maximum_incoming_buffer_size - 1) {
+              handle->maximum_incoming_buffer_size) {
       if(status == LRT_RCORE_OK) {
         status = rcomm_handle_complete_block(handle);
       }

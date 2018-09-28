@@ -2,6 +2,7 @@ set(LIBRCORE_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sequence_stack.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ack_stack.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rcomm.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/events.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/defaults.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subscription-map.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.c

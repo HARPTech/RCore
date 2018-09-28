@@ -147,7 +147,7 @@ rcomm_send_tb_entry(rcomm_handle_t* handle,
 }
 
 lrt_rcore_event_t
-rcomm_transfer_block_to_tb(rcomm_handle_t* handle,
+rcomm_transfer_message_to_tb(rcomm_handle_t* handle,
                            lrt_rbp_message_t* message,
                            lrt_rcore_transmit_buffer_t* tb)
 {

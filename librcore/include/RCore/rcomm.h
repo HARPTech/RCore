@@ -84,9 +84,10 @@ extern "C"
     rcomm_handle_t* handle,
     lrt_rcore_transmit_buffer_entry_t* entry);
 
-  lrt_rcore_event_t rcomm_transfer_block_to_tb(rcomm_handle_t* handle,
-                                               lrt_rbp_message_t* message,
-                                               lrt_rcore_transmit_buffer_t* tb);
+  lrt_rcore_event_t rcomm_transfer_message_to_tb(
+    rcomm_handle_t* handle,
+    lrt_rbp_message_t* message,
+    lrt_rcore_transmit_buffer_t* tb);
 
   lrt_rcore_event_t rcomm_handle_complete_block(rcomm_handle_t* handle);
 

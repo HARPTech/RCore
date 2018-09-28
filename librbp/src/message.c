@@ -5,6 +5,9 @@ size_t
 lrt_rbp_buffer_length_from_message_length(size_t msg_length);
 size_t
 lrt_rbp_message_length_from_buffer_length(size_t buffer_length);
+bool
+lrt_rbp_message_check_config(const lrt_rbp_message_t* message,
+                             lrt_rbp_message_config_t config);
 
 void
 lrt_rbp_message_copy(lrt_rbp_message_t* target,

@@ -93,3 +93,22 @@ TEST_CASE("Parsing bytes with rcomm", "[rcore]")
 
   rcomm_free(handle);
 }
+
+TEST_CASE("Send and receive over RComm", "[rcore]") {
+  rcomm_handle_t* handle =
+    rcomm_handle_create_from_config(lrt_rcore_rcomm_universal_defaults);
+
+  rcomm_set_transmit_cb(handle,
+                        [](const uint8_t* data, void* userdata, size_t bytes) {
+                          return LRT_RCORE_OK;
+                        },
+                        nullptr);
+  rcomm_set_accept_cb(
+    handle,
+    [](lrt_rbp_message_t* message, void* userdata) { return LRT_RCORE_OK; },
+    nullptr);
+
+  REQUIRE(handle != NULL);
+
+  rcomm_free(handle);
+}

@@ -1,7 +1,9 @@
 # Variables defining the test.
-set(TEST_NAME rbp-test)
-set(TEST_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/test-message.cpp)
-set(TEST_LIBS rbp rcp rsp)
+set(TEST_NAME rcp-test)
+set(TEST_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/test-message.cpp
+    )
+set(TEST_LIBS rcp)
 
 # Here begins the setup of the test.
 add_library(${TEST_NAME} SHARED ${TEST_SRCS})

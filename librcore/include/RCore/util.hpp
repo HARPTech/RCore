@@ -9,11 +9,11 @@ namespace RCore {
 using RCommHandlePtr =
   std::unique_ptr<rcomm_handle_t, void (*)(rcomm_handle_t* handle)>;
 inline RCommHandlePtr
-CreateRCommHandlePtr()
+CreateRCommHandlePtr(
+  lrt_rcore_rcomm_config_t config = lrt_rcore_rcomm_universal_defaults)
 {
-  auto handle = RCommHandlePtr(
-    rcomm_handle_create_from_config(lrt_rcore_rcomm_universal_defaults),
-    &rcomm_free);
+  auto handle =
+    RCommHandlePtr(rcomm_handle_create_from_config(config), &rcomm_free);
   return handle;
 }
 }

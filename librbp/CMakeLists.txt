@@ -1,5 +1,6 @@
 set(LIBRBP_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/message.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/crc.c
     )
 
 if(USE_AVR_LIBRARIES)

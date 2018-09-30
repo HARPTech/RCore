@@ -35,7 +35,7 @@ TEST_CASE("Setting and getting data", "[rsp]")
     uint8_t data[] = { 0, 1, 45, 1, 4 };
     REQUIRE(rcomm_message_insert_data(&message, data, 5, 0) == 5);
 
-    REQUIRE(message.length == 5 + 5 + 1);
+    REQUIRE(message.length == 14);
 
     uint8_t encoded[16];
 

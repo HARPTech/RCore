@@ -16,6 +16,12 @@ extern "C"
       return b;
     return a;
   }
+  inline size_t lrt_size_t_max(size_t a, size_t b)
+  {
+    if(a > b)
+      return a;
+    return b;
+  }
 
   /**
    * @brief Return the offset of encapsulated data in this message.
@@ -47,9 +53,19 @@ extern "C"
     assert(message != NULL);
     assert(message->_memory > rcomm_message_get_data_offset(message) +
                                 rcomm_message_get_trailing_size(message));
-    size_t size = message->_memory - rcomm_message_get_data_offset(message);
-    size -= rcomm_message_get_trailing_size(message);
-    return size;
+    return message->_memory - rcomm_message_get_data_offset(message) -
+           rcomm_message_get_trailing_size(message);
+    ;
+  }
+
+  inline size_t rcomm_message_get_trailing_offset(
+    const lrt_rbp_message_t* message)
+  {
+    assert(message != NULL);
+    assert(message->length > 0);
+    return lrt_rbp_message_length_from_buffer_length(
+             lrt_rbp_buffer_length_from_message_length(message->length)) -
+           rcomm_message_get_trailing_size(message);
   }
 
   inline size_t rcomm_message_insert_data(lrt_rbp_message_t* message,
@@ -66,12 +82,14 @@ extern "C"
      * only handles the inner message data. */
     size_t size = lrt_size_t_min(rcomm_message_get_data_size(message), length);
 
+    // The +1 converts from an offset to a size.
+    lrt_rbp_message_resize(message,
+                           rcomm_message_get_data_offset(message) + size +
+                             rcomm_message_get_trailing_size(message) + 1);
+
     memcpy(message->data + rcomm_message_get_data_offset(message),
            data + offset,
            size);
-    // The new message length is equal to the amount of bytes copied.
-    message->length = rcomm_message_get_data_offset(message) + size +
-                      rcomm_message_get_trailing_size(message);
 
     return size + offset;
   }

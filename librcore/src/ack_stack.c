@@ -66,6 +66,7 @@ init_stack_entry(rcomm_ack_stack_entry_t* entry)
     }
   }
   entry->queue_size = 0;
+  entry->ns_since_last_ack = 0;
 }
 
 static rcomm_ack_stack_entry_t*
@@ -243,6 +244,7 @@ lrt_rcore_ack_stack_init(size_t stack_size,
   stack->maximum_entries_in_use = maximum_stack_size;
 
   stack->ack_ns_avg = 10;
+  stack->ack_ns_avg_sampling_rate = ack_ns_avg_sampling_rate;
 
   stack->entries = kh_init(entry_map);
 

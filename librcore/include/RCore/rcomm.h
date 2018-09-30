@@ -75,10 +75,10 @@ extern "C"
                            void* userdata);
 
   lrt_rcore_event_t rcomm_transmit_message(rcomm_handle_t* handle,
-                                           const lrt_rbp_message_t* message);
+                                           lrt_rbp_message_t* message);
 
   lrt_rcore_event_t rcomm_send_message(rcomm_handle_t* handle,
-                                       const lrt_rbp_message_t* message);
+                                       lrt_rbp_message_t* message);
 
   lrt_rcore_event_t rcomm_send_tb_entry(
     rcomm_handle_t* handle,

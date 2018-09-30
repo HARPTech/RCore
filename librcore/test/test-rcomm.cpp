@@ -1,5 +1,8 @@
 #include "../include/RCore/defaults.h"
 #include "../include/RCore/rcomm.h"
+#include "../include/RCore/util.hpp"
+#include <bitset>
+#include <sstream>
 #include <catch.hpp>
 
 TEST_CASE("Parsing bytes with rcomm", "[rcore]")
@@ -18,6 +21,10 @@ TEST_CASE("Parsing bytes with rcomm", "[rcore]")
     nullptr);
 
   REQUIRE(handle != NULL);
+
+  // Turn off CRC checking for all tests.
+  lrt_rbp_message_set_config(
+    &handle->incoming_message, LRT_RBP_MESSAGE_CONFIG_ENABLE_CRC8, false);
 
   SECTION("Unreliable tiny message")
   {
@@ -94,21 +101,65 @@ TEST_CASE("Parsing bytes with rcomm", "[rcore]")
   rcomm_free(handle);
 }
 
-TEST_CASE("Send and receive over RComm", "[rcore]") {
-  rcomm_handle_t* handle =
-    rcomm_handle_create_from_config(lrt_rcore_rcomm_universal_defaults);
+static std::string
+convertUint8ArrayToString(const uint8_t* data, size_t bytes)
+{
+  std::stringstream out;
+  for(size_t i = 0; i < bytes; ++i) {
+    std::bitset<8> bits(data[i]);
+    out << bits << " ";
+  }
+  return out.str();
+}
 
-  rcomm_set_transmit_cb(handle,
-                        [](const uint8_t* data, void* userdata, size_t bytes) {
-                          return LRT_RCORE_OK;
-                        },
-                        nullptr);
+TEST_CASE("Send and receive over RComm with CRC checking", "[rcore]")
+{
+  lrt::RCore::RCommHandlePtr handle1 = lrt::RCore::CreateRCommHandlePtr();
+  lrt::RCore::RCommHandlePtr handle2 = lrt::RCore::CreateRCommHandlePtr();
+
+  rcomm_set_transmit_cb(
+    handle1.get(),
+    [](const uint8_t* data, void* userdata, size_t bytes) {
+      // Log sent bytes and sizes.
+      INFO("Sending " << bytes << " bytes from handle1 to handle2: "
+                      << convertUint8ArrayToString(data, bytes));
+
+      rcomm_handle_t* handle = static_cast<rcomm_handle_t*>(userdata);
+      lrt_rcore_event_t status = rcomm_parse_bytes(handle, data, bytes);
+      REQUIRE(status == LRT_RCORE_OK);
+      return status;
+    },
+    static_cast<void*>(handle2.get()));
+  rcomm_set_transmit_cb(
+    handle2.get(),
+    [](const uint8_t* data, void* userdata, size_t bytes) {
+      rcomm_handle_t* handle = static_cast<rcomm_handle_t*>(userdata);
+      // Log sent bytes and sizes.
+      INFO("Sending " << bytes << " bytes from handle2 to handle1: "
+                      << convertUint8ArrayToString(data, bytes));
+
+      lrt_rcore_event_t status = rcomm_parse_bytes(handle, data, bytes);
+      REQUIRE(status == LRT_RCORE_OK);
+      return status;
+    },
+    static_cast<void*>(handle1.get()));
+
   rcomm_set_accept_cb(
-    handle,
+    handle1.get(),
+    [](lrt_rbp_message_t* message, void* userdata) { return LRT_RCORE_OK; },
+    nullptr);
+  rcomm_set_accept_cb(
+    handle2.get(),
     [](lrt_rbp_message_t* message, void* userdata) { return LRT_RCORE_OK; },
     nullptr);
 
-  REQUIRE(handle != NULL);
+  REQUIRE(handle1);
+  REQUIRE(handle2);
 
-  rcomm_free(handle);
+  REQUIRE(rcomm_send_ctrl(
+            handle1.get(), 0, 10, LRT_RCP_MESSAGE_TYPE_SUBSCRIBE, true) ==
+          LRT_RCORE_OK);
+  REQUIRE(rcomm_send_ctrl(
+            handle1.get(), 0, 10, LRT_RCP_MESSAGE_TYPE_SUBSCRIBE, false) ==
+          LRT_RCORE_OK);
 }

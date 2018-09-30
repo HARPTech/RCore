@@ -1,3 +1,4 @@
+#include "../include/RCore/librbp/internal/crc.h"
 #include "../include/RCore/librbp/message.h"
 #include <catch.hpp>
 
@@ -17,8 +18,9 @@ TEST_CASE("Block initialisation", "[rbp]")
 TEST_CASE("Encode and decode message blocks", "[rbp]")
 {
   lrt_rbp_message_t message;
-  lrt_rbp_message_init(
-    &message, lrt_rbp_message_length_from_buffer_length(16), 0);
+  lrt_rbp_message_init(&message,
+                       lrt_rbp_message_length_from_buffer_length(16),
+                       LRT_RBP_MESSAGE_CONFIG_ENABLE_CRC8);
 
   uint8_t data_model[] = { 1u, 15u, 214u, 128u, 0u, 10u };
 
@@ -31,6 +33,9 @@ TEST_CASE("Encode and decode message blocks", "[rbp]")
   // Not initialised.
   const size_t buffer_length = 16;
   uint8_t buffer[buffer_length];
+
+  REQUIRE(message.length == 7);
+
   auto status = lrt_rbp_encode_message(&message, buffer, buffer_length);
   REQUIRE(status == LRT_RCORE_OK);
 
@@ -49,6 +54,16 @@ TEST_CASE("Encode and decode message blocks", "[rbp]")
 
   for(size_t i = 0; i < 6; ++i)
     REQUIRE((int)message.data[i] == (int)data_model[i]);
+
+  SECTION("invalidate data to test CRC8")
+  {
+    REQUIRE(lrt_rbp_validate_crc(&message) == LRT_RCORE_OK);
+    auto c = message.data[3];
+    message.data[3] = 244;
+    REQUIRE(lrt_rbp_validate_crc(&message) == LRT_RCORE_CRC_MISMATCH);
+    message.data[3] = c;
+    REQUIRE(lrt_rbp_validate_crc(&message) == LRT_RCORE_OK);
+  }
 
   lrt_rbp_message_free_internal(&message);
 }

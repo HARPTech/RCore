@@ -1,4 +1,5 @@
 #include "../include/RCore/librbp/message.h"
+#include "../include/RCore/librbp/internal/crc.h"
 #include <stdlib.h>
 
 size_t
@@ -8,7 +9,8 @@ lrt_rbp_message_length_from_buffer_length(size_t buffer_length);
 bool
 lrt_rbp_message_check_config(const lrt_rbp_message_t* message,
                              lrt_rbp_message_config_t config);
-
+void
+lrt_rbp_message_reset_data(lrt_rbp_message_t* message);
 void
 lrt_rbp_message_copy(lrt_rbp_message_t* target,
                      const lrt_rbp_message_t* source);
@@ -55,6 +57,10 @@ lrt_rbp_message_free(lrt_rbp_message_t* message)
 lrt_rcore_event_t
 lrt_rbp_message_resize(lrt_rbp_message_t* message, size_t target_length)
 {
+  // Transform the target length to a desired value.
+  target_length = lrt_rbp_message_length_from_buffer_length(
+    lrt_rbp_buffer_length_from_message_length(target_length - 1));
+
   if(target_length <= message->_memory) {
     message->length = target_length;
     return LRT_RCORE_OK;
@@ -69,6 +75,7 @@ lrt_rbp_message_resize(lrt_rbp_message_t* message, size_t target_length)
     }
 
     message->_memory = target_length;
+    message->length = target_length;
     return LRT_RCORE_OK;
   }
 
@@ -85,11 +92,20 @@ lrt_rbp_message_resize(lrt_rbp_message_t* message, size_t target_length)
 }
 
 lrt_rcore_event_t
-lrt_rbp_encode_message(const lrt_rbp_message_t* msg,
+lrt_rbp_encode_message(lrt_rbp_message_t* msg,
                        uint8_t* buffer,
                        size_t buffer_length)
 {
   assert(buffer_length >= 2);
+
+  // Resize the message to the correct size before sending.
+  lrt_rbp_message_resize(msg, msg->length);
+
+  // Set the CRC checksum.
+  lrt_rcore_event_t status = lrt_rbp_set_crc(msg);
+  if(status != LRT_RCORE_OK) {
+    return status;
+  }
 
   size_t i = 0;
 
@@ -134,7 +150,9 @@ lrt_rbp_decode_message(lrt_rbp_message_t* msg,
                           (7U - ((i % 7U) + 1U))));
   }
 
-  return LRT_RCORE_OK;
+  lrt_rcore_event_t status = lrt_rbp_validate_crc(msg);
+
+  return status;
 }
 
 lrt_rcore_event_t

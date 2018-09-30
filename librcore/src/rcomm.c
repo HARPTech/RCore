@@ -1,4 +1,5 @@
 #include "../include/RCore/rcomm.h"
+#include "../../librbp/include/RCore/librbp/internal/crc.h"
 
 void
 rcomm_init(rcomm_handle_t* handle,
@@ -71,7 +72,7 @@ rcomm_set_accept_cb(rcomm_handle_t* handle,
 }
 
 lrt_rcore_event_t
-rcomm_transmit_message(rcomm_handle_t* handle, const lrt_rbp_message_t* message)
+rcomm_transmit_message(rcomm_handle_t* handle, lrt_rbp_message_t* message)
 {
   // Translate the message into outgoing data.
   lrt_rcore_event_t status = lrt_rbp_encode_message(
@@ -82,11 +83,15 @@ rcomm_transmit_message(rcomm_handle_t* handle, const lrt_rbp_message_t* message)
     handle->outgoing_buffer,
     handle->transmit_userdata,
     lrt_rbp_buffer_length_from_message_length(message->length));
+
+  assert(message->length % 7 == 0);
+  assert(lrt_rbp_buffer_length_from_message_length(message->length) % 8 == 0);
+
   return status;
 }
 
 lrt_rcore_event_t
-rcomm_send_message(rcomm_handle_t* handle, const lrt_rbp_message_t* message)
+rcomm_send_message(rcomm_handle_t* handle, lrt_rbp_message_t* message)
 {
   assert(handle != NULL);
   assert(message != NULL);
@@ -112,7 +117,7 @@ rcomm_send_tb_entry(rcomm_handle_t* handle,
   assert(handle != 0);
   assert(entry != 0);
   assert(entry->data != 0);
-  assert(entry->data->l != 0);
+  assert(entry->data->l >= 0);
   assert(entry->transmit_offset == 0);
 
   bool finished = lrt_rcore_transmit_buffer_entry_transmit_finished(entry);
@@ -123,32 +128,33 @@ rcomm_send_tb_entry(rcomm_handle_t* handle,
   // Prepare outgoing message.
   rcomm_message_set_flag(
     &handle->outgoing_message, LRT_LIBRSP_STREAM_START, true);
-  rcomm_message_set_flag(
-    &handle->outgoing_message, LRT_LIBRSP_RELIABLE, entry->reliable);
-  rcomm_message_set_litecomm_type(&handle->outgoing_message, entry->type);
-  rcomm_message_set_litecomm_property(&handle->outgoing_message,
-                                      entry->property);
-  rcomm_set_litecomm_message_type(&handle->outgoing_message,
-                                  entry->message_type);
 
   // Send as many messages as required.
   while(status == LRT_RCORE_OK &&
         !finished) { /* Each iteration handles a new block to be transmitted. */
+    rcomm_message_set_flag(
+      &handle->outgoing_message, LRT_LIBRSP_RELIABLE, entry->reliable);
+    rcomm_message_set_litecomm_type(&handle->outgoing_message, entry->type);
+    rcomm_message_set_litecomm_property(&handle->outgoing_message,
+                                        entry->property);
+    rcomm_set_litecomm_message_type(&handle->outgoing_message,
+                                    entry->message_type);
+    rcomm_message_set_sequence_number(&handle->outgoing_message,
+                                      entry->seq_number++);
+
     entry->transmit_offset = rcomm_message_insert_data(
       &handle->outgoing_message,
       (const uint8_t*)entry->data->s,
       entry->data->l,
       entry->transmit_offset); /* Set rest of block data fields. */
-    rcomm_message_set_sequence_number(&handle->outgoing_message,
-                                      entry->seq_number);
 
     finished = lrt_rcore_transmit_buffer_entry_transmit_finished(entry);
 
     rcomm_message_set_flag(
       &handle->outgoing_message, LRT_LIBRSP_STREAM_END, finished);
+
     status = rcomm_send_message(handle, &handle->outgoing_message);
-    rcomm_message_set_flag(
-      &handle->outgoing_message, LRT_LIBRSP_STREAM_START, false);
+    lrt_rbp_message_reset_data(&handle->outgoing_message);
   }
 
   // The entry should be finished by now.
@@ -195,6 +201,14 @@ rcomm_handle_complete_block(rcomm_handle_t* handle)
                                   handle->incoming_buffer,
                                   handle->incoming_buffer_size);
 
+  if(status == LRT_RCORE_OK) {
+    status = lrt_rbp_validate_crc(&handle->incoming_message);
+
+    if(status != LRT_RCORE_OK) {
+      return status;
+    }
+  }
+
   if(rcomm_message_has_flag(&handle->incoming_message, LRT_LIBRSP_ACK)) {
     return lrt_rcore_ack_stack_remove(handle->ack_stack,
                                       &handle->incoming_message);
@@ -230,6 +244,7 @@ rcomm_handle_complete_block(rcomm_handle_t* handle)
         handle->accept(&handle->incoming_message, handle->accept_userdata);
     }
   }
+  lrt_rbp_message_reset_data(&handle->incoming_message);
   return status;
 }
 lrt_rcore_event_t
@@ -286,6 +301,7 @@ rcomm_send_ctrl(rcomm_handle_t* handle,
                 bool reliable)
 {
   lrt_rcore_event_t status = LRT_RCORE_OK;
+  handle->outgoing_message.length = 6;
   assert(handle != 0);
   rcomm_message_set_flag(
     &handle->outgoing_message, LRT_LIBRSP_STREAM_TINY, true);
@@ -296,6 +312,7 @@ rcomm_send_ctrl(rcomm_handle_t* handle,
   rcomm_set_litecomm_message_type(&handle->outgoing_message, message_type);
   rcomm_message_set_sequence_number(&handle->outgoing_message, 0);
   status = rcomm_send_message(handle, &handle->outgoing_message);
+  lrt_rbp_message_reset_data(&handle->outgoing_message);
   return status;
 }
 

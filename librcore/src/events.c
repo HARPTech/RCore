@@ -19,6 +19,7 @@ const char* lrt_rcore_event_names[LRT_RCORE_EVENT_COUNT] = {
   "Not accepted",
   "Not subscribed",
   "[Transmit Buffer] Invalid entry",
+  "CRC mismatch",
 
   "[Block] Too short",
   "[Block] Not dividable by 8",

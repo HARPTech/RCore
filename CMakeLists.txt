@@ -4,7 +4,7 @@ project(RCore
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-option(BUILD_TESTS "Build the 'Criterion' Test Suite and enable testing" OFF)
+option(BUILD_TESTS "Build the 'Criterion' Test Suite and enable testing" ON)
 option(USE_AVR_LIBRARIES "Use AVR library calls instead of standard ones for Arduino compat" OFF)
 
 define_property(GLOBAL PROPERTY TEST_SHARED_LIBRARIES

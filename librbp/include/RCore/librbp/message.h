@@ -109,7 +109,7 @@ extern "C"
   /** Calculate the minimum buffer length from a given message length. */
   inline size_t lrt_rbp_buffer_length_from_message_length(size_t msg_length)
   {
-    return ((msg_length / 7u) + 1u) * 8u;
+    return (((msg_length - 1) / 7u) + 1u) * 8u;
   }
 
   /** Calculate the minimum message length from a given buffer length. */
@@ -118,10 +118,19 @@ extern "C"
     return (buffer_length / 8u) * 7u;
   }
 
+  inline void lrt_rbp_message_reset_data(lrt_rbp_message_t* message)
+  {
+    if(message->data != NULL) {
+      memset(message->data,
+             sizeof(lrt_rbp_message_data_element) * message->_memory,
+             0);
+    }
+  }
+
   /** Encode the message given in msg into the given buffer. Returns
    * LRT_RCORE_DATA_LEFT when it needs to be called again after sending the
    * current data chunk, LRT_RCORE_OK once encoding is finished. */
-  lrt_rcore_event_t lrt_rbp_encode_message(const lrt_rbp_message_t* msg,
+  lrt_rcore_event_t lrt_rbp_encode_message(lrt_rbp_message_t* msg,
                                            lrt_rbp_message_data_element* buffer,
                                            size_t buffer_length);
 

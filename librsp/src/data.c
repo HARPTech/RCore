@@ -3,11 +3,15 @@
 size_t
 lrt_size_t_min(size_t a, size_t b);
 size_t
+lrt_size_t_max(size_t a, size_t b);
+size_t
 rcomm_message_get_data_offset(const lrt_rbp_message_t* message);
 size_t
 rcomm_message_get_data_size(const lrt_rbp_message_t* message);
 size_t
 rcomm_message_get_trailing_size(const lrt_rbp_message_t* message);
+size_t
+rcomm_message_get_trailing_offset(const lrt_rbp_message_t* message);
 size_t
 rcomm_message_insert_data(lrt_rbp_message_t* message,
                           const uint8_t* data,

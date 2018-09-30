@@ -212,6 +212,7 @@ search_stack_and_insert(lrt_rcore_sequence_stack_t* stack,
       kliter_t(message_list)* new_p = NULL;
 
       new_p = kmp_alloc(message_list, entry->messages->mp);
+      lrt_rbp_message_reset_data(&new_p->data);
       lrt_rbp_message_copy(&new_p->data, message);
       new_p->next = p;
 

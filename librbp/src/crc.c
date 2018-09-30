@@ -34,7 +34,7 @@
 #include "../../librsp/include/RCore/librsp/data.h"
 #include <stdlib.h>
 
-#define CRC_START_8 0x00
+#define CRC_START_8 0x00;
 
 static uint8_t crc8_table[] = {
   0,   49,  98,  83,  196, 245, 166, 151, 185, 136, 219, 234, 125, 76,  31,
@@ -84,6 +84,7 @@ lrt_rbp_validate_crc(const lrt_rbp_message_t* message)
     size_t offset = rcomm_message_get_trailing_offset(message);
 
     assert((offset + 1) % 7 == 0);
+    assert(message->length % 7 == 0);
 
     if(crc8 != 0) {
       return LRT_RCORE_CRC_MISMATCH;
@@ -113,6 +114,7 @@ lrt_rbp_set_crc(lrt_rbp_message_t* message)
     size_t offset = rcomm_message_get_trailing_offset(message);
     assert((offset + 1) % 7 == 0);
     assert(offset > 5);
+    assert(message->length % 7 == 0);
     message->data[offset] = crc8;
   }
   if(lrt_rbp_message_check_config(message,

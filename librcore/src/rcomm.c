@@ -250,7 +250,7 @@ rcomm_handle_complete_block(rcomm_handle_t* handle)
 lrt_rcore_event_t
 rcomm_parse_bytes(rcomm_handle_t* handle, const uint8_t* data, size_t length)
 {
-  lrt_rcore_event_t status = LRT_RCORE_OK;
+  lrt_rcore_event_t status = LRT_RCORE_NO_NEW_MESSAGE;
   for(size_t i = 0; i < length; ++i) {
     if((data[i] & LRT_LIBRBP_BLOCK_START_BIT) >
        0) { /* Begin of new block, old block can be
@@ -260,14 +260,14 @@ rcomm_parse_bytes(rcomm_handle_t* handle, const uint8_t* data, size_t length)
            0) { /* Only if the byte counter is dividable by 8, the block would
                  * be discarded otherwise. This makes small blocks possible
                  * for faster transmissions of small values. */
-        if(status == LRT_RCORE_OK) {
+        if(status <= LRT_RCORE_OK) {
           status = rcomm_handle_complete_block(handle);
         }
       }
       handle->incoming_buffer_size = 0;
     } else if(handle->incoming_buffer_size ==
               handle->maximum_incoming_buffer_size) {
-      if(status == LRT_RCORE_OK) {
+      if(status <= LRT_RCORE_OK) {
         status = rcomm_handle_complete_block(handle);
       }
       handle->incoming_buffer_size = 0;
@@ -286,7 +286,7 @@ rcomm_parse_bytes(rcomm_handle_t* handle, const uint8_t* data, size_t length)
   } /* Also handle finished blocks if there are no additional bytes. */
   if(handle->incoming_buffer_size > 0 &&
      handle->incoming_buffer_size % 8 == 0) {
-    if(status == LRT_RCORE_OK) {
+    if(status <= LRT_RCORE_OK) {
       status = rcomm_handle_complete_block(handle);
     }
     handle->incoming_buffer_size = 0;

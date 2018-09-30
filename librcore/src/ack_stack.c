@@ -139,7 +139,9 @@ pop_message(lrt_rcore_ack_stack_t* stack,
     kliter_t(message_list)* p = entry->messages->head;
 
     // The sequence numbers always have to be in the right order logically.
-    assert(rcomm_message_get_sequence_number(&p->data) == sequence_number);
+    if(rcomm_message_get_sequence_number(&p->data) != sequence_number) {
+      return LRT_RCORE_NO_ACK_ENTRY_FOUND;
+    }
 
     p->data.length = 0;
     kmp_free(message_list, entry->messages->mp, p);

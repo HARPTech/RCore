@@ -1,6 +1,7 @@
 #include "../include/RCore/events.h"
 
 const char* lrt_rcore_event_names[LRT_RCORE_EVENT_COUNT] = {
+  "No new message",
   "Ok",
   "Invalid Block",
   "Stack Full",

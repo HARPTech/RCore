@@ -8,7 +8,11 @@ extern "C"
 
   typedef enum lrt_rcore_event_t
   {
+    // Not error messages.
+    LRT_RCORE_NO_NEW_MESSAGE,
     LRT_RCORE_OK,
+
+    // Error Messages
     LRT_RCORE_INVALID_BLOCK,
     LRT_RCORE_STACK_FULL,
     LRT_RCORE_ACK_STACK_MAP_FULL,

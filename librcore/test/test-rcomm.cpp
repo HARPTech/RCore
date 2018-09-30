@@ -1,9 +1,11 @@
 #include "../include/RCore/defaults.h"
 #include "../include/RCore/rcomm.h"
 #include "../include/RCore/util.hpp"
+#include <algorithm>
 #include <bitset>
-#include <sstream>
 #include <catch.hpp>
+#include <random>
+#include <sstream>
 
 TEST_CASE("Parsing bytes with rcomm", "[rcore]")
 {
@@ -162,4 +164,153 @@ TEST_CASE("Send and receive over RComm with CRC checking", "[rcore]")
   REQUIRE(rcomm_send_ctrl(
             handle1.get(), 0, 10, LRT_RCP_MESSAGE_TYPE_SUBSCRIBE, false) ==
           LRT_RCORE_OK);
+}
+
+std::default_random_engine generator(time(0));
+std::uniform_int_distribution<int> distributionBitAmount(1, 3);
+
+using MsgArray = std::array<uint8_t, 16>;
+
+static void
+randomlyMutateArray(MsgArray& arr, size_t times, size_t max_byte)
+{
+  std::vector<size_t> possibilities(8 * max_byte);
+  std::iota(std::begin(possibilities), std::end(possibilities), 0);
+  std::random_shuffle(std::begin(possibilities), std::end(possibilities));
+
+  REQUIRE(possibilities.size() == max_byte * 8);
+
+  for(size_t i = 0; i < times; ++i) {
+    size_t byte = possibilities[i] / 8;
+    size_t bit = possibilities[i] % 8;
+
+    arr[byte] ^= 1u << bit;
+  }
+  CAPTURE(times);
+}
+
+TEST_CASE("Send and receive over RComm with CRC mismatch detection", "[rcore]")
+{
+  lrt::RCore::RCommHandlePtr handle1 = lrt::RCore::CreateRCommHandlePtr();
+  lrt::RCore::RCommHandlePtr handle2 = lrt::RCore::CreateRCommHandlePtr();
+
+  rcomm_set_transmit_cb(
+    handle1.get(),
+    [](const uint8_t* data, void* userdata, size_t bytes) {
+      // Log sent bytes and sizes.
+      INFO("Sending " << bytes << " bytes from handle1 to handle2: "
+                      << convertUint8ArrayToString(data, bytes));
+
+      rcomm_handle_t* handle = static_cast<rcomm_handle_t*>(userdata);
+
+      // Randomly change bits in message.
+      std::array<uint8_t, 16> arr;
+      std::copy(data, data + bytes, std::begin(arr));
+      randomlyMutateArray(arr, distributionBitAmount(generator), bytes);
+
+      // Check that the array is different than before.
+      bool different = false;
+      for(size_t i = 0; i < bytes; ++i) {
+        if(arr[i] != data[i]) {
+          different = true;
+        }
+      }
+      INFO("(After Transform) Sending "
+           << bytes << " bytes from handle1 to handle2: "
+           << convertUint8ArrayToString(arr.data(), bytes));
+      REQUIRE(different);
+
+      lrt_rcore_event_t status = rcomm_parse_bytes(handle, arr.data(), bytes);
+      return status;
+    },
+    static_cast<void*>(handle2.get()));
+  rcomm_set_transmit_cb(
+    handle2.get(),
+    [](const uint8_t* data, void* userdata, size_t bytes) {
+      rcomm_handle_t* handle = static_cast<rcomm_handle_t*>(userdata);
+      // Log sent bytes and sizes.
+      INFO("Sending " << bytes << " bytes from handle2 to handle1: "
+                      << convertUint8ArrayToString(data, bytes));
+
+      // Randomly change 2 bits in message.
+      std::array<uint8_t, 16> arr;
+      std::copy(data, data + bytes, std::begin(arr));
+      randomlyMutateArray(arr, 2, bytes);
+
+      // Check that the array is different than before.
+      bool different = false;
+      for(size_t i = 0; i < bytes; ++i) {
+        if(arr[i] != data[i]) {
+          different = true;
+        }
+      }
+      REQUIRE(different);
+
+      lrt_rcore_event_t status = rcomm_parse_bytes(handle, arr.data(), bytes);
+      return status;
+    },
+    static_cast<void*>(handle1.get()));
+
+  rcomm_set_accept_cb(
+    handle1.get(),
+    [](lrt_rbp_message_t* message, void* userdata) { return LRT_RCORE_OK; },
+    nullptr);
+  rcomm_set_accept_cb(
+    handle2.get(),
+    [](lrt_rbp_message_t* message, void* userdata) { return LRT_RCORE_OK; },
+    nullptr);
+
+  REQUIRE(handle1);
+  REQUIRE(handle2);
+
+  lrt_rbp_message_t message;
+  lrt_rbp_message_init(&message, 14, LRT_RBP_MESSAGE_CONFIG_ENABLE_CRC8);
+
+  const size_t tries = 100;
+
+  for(size_t i = 0; i < tries; ++i) {
+
+    lrt_rcore_event_t status = LRT_RCORE_OK;
+
+    status = rcomm_send_ctrl(
+      handle1.get(), 5, 100, LRT_RCP_MESSAGE_TYPE_SUBSCRIBE, false);
+
+    {
+      CAPTURE(status);
+      CAPTURE(i);
+
+      REQUIRE((status == LRT_RCORE_CRC_MISMATCH ||
+               status == LRT_RCORE_NO_ACK_ENTRY_FOUND ||
+               status == LRT_RCORE_BLOCK_NO_START_BIT ||
+               status == LRT_RCORE_BLOCK_START_BIT_INSIDE_MESSAGE ||
+               status == LRT_RCORE_NO_NEW_MESSAGE));
+    }
+
+    lrt_rbp_message_reset_data(&message);
+
+    rcomm_message_set_flag(&message, LRT_LIBRSP_RELIABLE, false);
+    rcomm_message_set_flag(&message, LRT_LIBRSP_STREAM_START, true);
+    rcomm_message_set_flag(&message, LRT_LIBRSP_STREAM_END, true);
+    lrt_librcp_Int16_set_data(&message, 10000);
+    rcomm_message_set_litecomm_type(&message, 5);
+    rcomm_message_set_litecomm_property(&message, 100);
+    rcomm_message_set_sequence_number(&message, i);
+
+    status = rcomm_transmit_message(handle1.get(), &message);
+
+    {
+      CAPTURE(status);
+      CAPTURE(i);
+
+      REQUIRE((status == LRT_RCORE_CRC_MISMATCH ||
+               status == LRT_RCORE_NO_ACK_ENTRY_FOUND ||
+               status == LRT_RCORE_BLOCK_NO_START_BIT ||
+               status == LRT_RCORE_BLOCK_START_BIT_INSIDE_MESSAGE ||
+               status == LRT_RCORE_NO_NEW_MESSAGE));
+    }
+
+    lrt_rbp_message_reset_data(&message);
+  }
+
+  lrt_rbp_message_free_internal(&message);
 }

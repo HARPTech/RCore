@@ -27,7 +27,7 @@ target_include_directories(rcore${LIBRARY_SUFFIX}
     )
 
 target_link_libraries(rcore${LIBRARY_SUFFIX} rbp${LIBRARY_SUFFIX})
-target_link_libraries(rcore${LIBRARY_SUFFIX} klib)
+target_link_libraries(rcore${LIBRARY_SUFFIX} klib${LIBRARY_SUFFIX})
 
 # Tests
 if(BUILD_TESTS)

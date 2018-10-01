@@ -24,6 +24,9 @@ set(LIBRARY_SUFFIX "")
 
 if(USE_AVR_LIBRARIES)
     set(LIBRARY_SUFFIX -${AVR_MCU})
+
+    # This global include directories is because a CMake error with the KLib target.
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/)
 endif()
 
 add_subdirectory(librbp)

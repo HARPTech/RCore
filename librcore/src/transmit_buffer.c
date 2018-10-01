@@ -1,3 +1,5 @@
+#include "../include/RCore/internal/avr_kroundup.h"
+
 #include "../include/RCore/transmit_buffer.h"
 #include "../../librsp/include/RCore/librsp/flags.h"
 #include "../include/RCore/internal/hashtable.h"

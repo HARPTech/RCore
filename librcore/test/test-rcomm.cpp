@@ -36,16 +36,6 @@ TEST_CASE("Parsing bytes with rcomm", "[rcore]")
     REQUIRE(rcomm_parse_bytes(handle, data, 10) == LRT_RCORE_OK);
 
     REQUIRE(handle->incoming_message.length == 7);
-    REQUIRE(handle->incoming_message.data[0] == 0b00110000);
-
-    REQUIRE(rcomm_message_has_flag(&handle->incoming_message,
-                                   LRT_LIBRSP_STREAM_START));
-    REQUIRE(
-      rcomm_message_has_flag(&handle->incoming_message, LRT_LIBRSP_STREAM_END));
-    REQUIRE(rcomm_message_has_flag(&handle->incoming_message,
-                                   LRT_LIBRSP_STREAM_TINY));
-    REQUIRE(
-      !rcomm_message_has_flag(&handle->incoming_message, LRT_LIBRSP_RELIABLE));
 
     REQUIRE(handle->incoming_buffer[0] == 0b10000000);
     REQUIRE(handle->incoming_buffer[1] == 0b01010101);
@@ -88,7 +78,6 @@ TEST_CASE("Parsing bytes with rcomm", "[rcore]")
     REQUIRE(rcomm_parse_bytes(handle, data, 10) == LRT_RCORE_OK);
 
     REQUIRE(handle->incoming_message.length == 7);
-    REQUIRE(handle->incoming_message.data[0] == 0b01010000);
 
     REQUIRE(handle->incoming_buffer[0] == 0b10000000);
     REQUIRE(handle->incoming_buffer[1] == 0b01010101);

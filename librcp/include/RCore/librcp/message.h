@@ -1,12 +1,12 @@
 #ifndef LRT_LIBRCP_MESSAGE_H
 #define LRT_LIBRCP_MESSAGE_H
 
-#include "../../../../librbp/include/RCore/librbp/message.h"
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+  typedef struct lrt_rbp_message_t lrt_rbp_message_t;
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -91,16 +91,10 @@ extern "C"
   LRT_LIBRCP_CONVERSION_UNION(Float, float)
   LRT_LIBRCP_CONVERSION_UNION(Double, double)
 
-  inline lrt_rcp_message_type_t rcomm_get_litecomm_message_type(
-    lrt_rbp_message_t* message)
-  {
-    return (lrt_rcp_message_type_t)(message->data[4] & 0b11000000u);
-  }
-  inline void rcomm_set_litecomm_message_type(lrt_rbp_message_t* message,
-                                              lrt_rcp_message_type_t type)
-  {
-    message->data[4] = (message->data[4] & 0b00111111u) | type;
-  }
+  lrt_rcp_message_type_t rcomm_get_litecomm_message_type(
+    lrt_rbp_message_t* message);
+  void rcomm_set_litecomm_message_type(lrt_rbp_message_t* message,
+                                       lrt_rcp_message_type_t type);
 
 #ifdef __cplusplus
 }// closing brace for extern "C"

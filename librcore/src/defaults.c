@@ -1,3 +1,4 @@
+#include "../include/RCore/internal/avr_kroundup.h"
 #include "../include/RCore/defaults.h"
 
 rcomm_handle_t*

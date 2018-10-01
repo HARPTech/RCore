@@ -52,7 +52,7 @@
     rcomm_message_read_data(                                                   \
       message, lrt_librcp_union_##sTYPENAME.bytes, sizeof(tTYPE), 0);          \
     return lrt_librcp_##sTYPENAME##_from_data(                                 \
-      lrt_librcp_union_##sTYPENAME.bytes, sizeof(tTYPE));                      \
+      lrt_librcp_union_##sTYPENAME.bytes, sizeof(tTYPE));                   \
   }
 #else
 #define LRT_LIBRCP_CONVERSION_IMPL(sTYPENAME, tTYPE)                           \
@@ -71,12 +71,12 @@
                                          const tTYPE val)                      \
   {                                                                            \
     rcomm_message_insert_data(                                                 \
-      message, lrt_librcp_##sTYPENAME##_to_data(val), sizeof(tTYPE));          \
+      message, lrt_librcp_##sTYPENAME##_to_data(val), sizeof(tTYPE), 0);       \
   }                                                                            \
   tTYPE lrt_librcp_##sTYPENAME##_get_data(lrt_rbp_message_t* message)          \
   {                                                                            \
     rcomm_message_read_data(                                                   \
-      message, lrt_librcp_union_##sTYPENAME.bytes, sizeof(tTYPE));             \
+      message, lrt_librcp_union_##sTYPENAME.bytes, sizeof(tTYPE), 0);          \
     return lrt_librcp_##sTYPENAME##_from_data(                                 \
       lrt_librcp_union_##sTYPENAME.bytes, sizeof(tTYPE));                      \
   }
@@ -99,3 +99,15 @@ rcomm_get_litecomm_message_type(lrt_rbp_message_t* message);
 void
 rcomm_set_litecomm_message_type(lrt_rbp_message_t* message,
                                 lrt_rcp_message_type_t type);
+
+lrt_rcp_message_type_t
+rcomm_get_litecomm_message_type(lrt_rbp_message_t* message)
+{
+  return (lrt_rcp_message_type_t)(message->data[4] & 0b11000000u);
+}
+void
+rcomm_set_litecomm_message_type(lrt_rbp_message_t* message,
+                                lrt_rcp_message_type_t type)
+{
+  message->data[4] = (message->data[4] & 0b00111111u) | type;
+}

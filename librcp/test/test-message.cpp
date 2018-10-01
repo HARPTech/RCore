@@ -1,3 +1,4 @@
+#include <RCore/librbp/message.h>
 #include "../include/RCore/librcp/message.h"
 #include <catch.hpp>
 

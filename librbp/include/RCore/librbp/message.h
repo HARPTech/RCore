@@ -123,7 +123,7 @@ extern "C"
     if(message->data != NULL) {
       memset(message->data,
              sizeof(lrt_rbp_message_data_element) * message->_memory,
-             0);
+             message->_memory);
     }
   }
 

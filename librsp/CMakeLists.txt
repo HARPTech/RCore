@@ -15,6 +15,8 @@ endif()
 set_property(TARGET rsp
     PROPERTY C_STANDARD 11)
 
+set_property(TARGET rsp PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 target_include_directories(rsp${LIBRARY_SUFFIX}
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include

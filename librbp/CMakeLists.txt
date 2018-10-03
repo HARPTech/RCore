@@ -12,6 +12,7 @@ else()
 endif()
 
 set_property(TARGET rbp PROPERTY C_STANDARD 11)
+set_property(TARGET rbp PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(rbp${LIBRARY_SUFFIX}
     PUBLIC

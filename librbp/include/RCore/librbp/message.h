@@ -67,65 +67,25 @@ extern "C"
   lrt_rcore_event_t lrt_rbp_message_resize(lrt_rbp_message_t* message,
                                            size_t target_length);
 
-  inline void lrt_rbp_message_copy(lrt_rbp_message_t* target,
-                                   const lrt_rbp_message_t* source)
-  {
-    assert(target != NULL);
-    assert(source != NULL);
-    assert(source->data != NULL);
-
-    if(target->_memory < source->length) {
-      lrt_rbp_message_resize(target, source->length);
-    }
-
-    assert(target->_memory >= source->length);
-
-    target->config = source->config;
-    target->length = source->length;
-    memcpy(target->data, source->data, source->length);
-  }
+  void lrt_rbp_message_copy(lrt_rbp_message_t* target,
+                            const lrt_rbp_message_t* source);
 
   /** Get a configuration flag from the specified message struct. */
-  inline bool lrt_rbp_message_check_config(const lrt_rbp_message_t* message,
-                                           lrt_rbp_message_config_t config)
-  {
-    assert(message != NULL);
-    return (message->config & config) == config;
-  }
+  bool lrt_rbp_message_check_config(const lrt_rbp_message_t* message,
+                                    lrt_rbp_message_config_t config);
 
   /** Set a configuration flag into the specified message struct. */
-  inline void lrt_rbp_message_set_config(lrt_rbp_message_t* message,
-                                         lrt_rbp_message_config_t config,
-                                         bool state)
-  {
-    assert(message != NULL);
-    if(state) {
-      message->config |= config;
-    } else {
-      message->config &= ~config;
-    }
-  }
+  void lrt_rbp_message_set_config(lrt_rbp_message_t* message,
+                                  lrt_rbp_message_config_t config,
+                                  bool state);
 
   /** Calculate the minimum buffer length from a given message length. */
-  inline size_t lrt_rbp_buffer_length_from_message_length(size_t msg_length)
-  {
-    return (((msg_length - 1) / 7u) + 1u) * 8u;
-  }
+  size_t lrt_rbp_buffer_length_from_message_length(size_t msg_length);
 
   /** Calculate the minimum message length from a given buffer length. */
-  inline size_t lrt_rbp_message_length_from_buffer_length(size_t buffer_length)
-  {
-    return (buffer_length / 8u) * 7u;
-  }
+  size_t lrt_rbp_message_length_from_buffer_length(size_t buffer_length);
 
-  inline void lrt_rbp_message_reset_data(lrt_rbp_message_t* message)
-  {
-    if(message->data != NULL) {
-      memset(message->data,
-             sizeof(lrt_rbp_message_data_element) * message->_memory,
-             message->_memory);
-    }
-  }
+  void lrt_rbp_message_reset_data(lrt_rbp_message_t* message);
 
   /** Encode the message given in msg into the given buffer. Returns
    * LRT_RCORE_DATA_LEFT when it needs to be called again after sending the

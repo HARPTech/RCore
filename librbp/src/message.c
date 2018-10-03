@@ -3,17 +3,65 @@
 #include <stdlib.h>
 
 size_t
-lrt_rbp_buffer_length_from_message_length(size_t msg_length);
+lrt_rbp_buffer_length_from_message_length(size_t msg_length)
+{
+  return (((msg_length - 1) / 7u) + 1u) * 8u;
+}
+
 size_t
-lrt_rbp_message_length_from_buffer_length(size_t buffer_length);
+lrt_rbp_message_length_from_buffer_length(size_t buffer_length)
+{
+  return (buffer_length / 8u) * 7u;
+}
+
 bool
 lrt_rbp_message_check_config(const lrt_rbp_message_t* message,
-                             lrt_rbp_message_config_t config);
+                             lrt_rbp_message_config_t config)
+{
+  assert(message != NULL);
+  return (message->config & config) == config;
+}
+
 void
-lrt_rbp_message_reset_data(lrt_rbp_message_t* message);
+lrt_rbp_message_set_config(lrt_rbp_message_t* message,
+                           lrt_rbp_message_config_t config,
+                           bool state)
+{
+  assert(message != NULL);
+  if(state) {
+    message->config |= config;
+  } else {
+    message->config &= ~config;
+  }
+}
+
 void
-lrt_rbp_message_copy(lrt_rbp_message_t* target,
-                     const lrt_rbp_message_t* source);
+lrt_rbp_message_reset_data(lrt_rbp_message_t* message)
+{
+  if(message->data != NULL) {
+    memset(message->data,
+           sizeof(lrt_rbp_message_data_element) * message->_memory,
+           message->_memory);
+  }
+}
+
+void
+lrt_rbp_message_copy(lrt_rbp_message_t* target, const lrt_rbp_message_t* source)
+{
+  assert(target != NULL);
+  assert(source != NULL);
+  assert(source->data != NULL);
+
+  if(target->_memory < source->length) {
+    lrt_rbp_message_resize(target, source->length);
+  }
+
+  assert(target->_memory >= source->length);
+
+  target->config = source->config;
+  target->length = source->length;
+  memcpy(target->data, source->data, source->length);
+}
 
 lrt_rbp_message_t*
 lrt_rbp_message_create(size_t default_reserved_memory,

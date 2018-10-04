@@ -12,8 +12,9 @@ define_property(GLOBAL PROPERTY TEST_SHARED_LIBRARIES
     FULL_DOCS "All shared libraries containing tests, will be linked by the test runner.")
 set_property(GLOBAL PROPERTY TEST_SHARED_LIBRARIES "")
 
-include(TestBigEndian)
-TEST_BIG_ENDIAN(BIG_ENDIAN)
+if(NOT BIG_ENDIAN)
+    set(BIG_ENDIAN FALSE)
+endif()
 
 add_subdirectory(third_party)
 if(BUILD_TESTS)

@@ -7,7 +7,7 @@ if(USE_AVR_LIBRARIES)
     add_avr_library(rbp STATIC
 	${LIBRBP_SRCS})
 else()
-    add_library(rbp STATIC
+    add_library(rbp SHARED
 	${LIBRBP_SRCS})
 endif()
 
@@ -24,4 +24,14 @@ target_link_libraries(rbp${LIBRARY_SUFFIX} rsp${LIBRARY_SUFFIX} klib${LIBRARY_SU
 # Tests
 if(BUILD_TESTS)
     add_subdirectory(test)
+endif()
+
+# Install only when compiled with RBase
+if(INSTALL_RBASE)
+    include(GNUInstallDirs)
+
+    install(TARGETS rbp
+	    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/static)
 endif()

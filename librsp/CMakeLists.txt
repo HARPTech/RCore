@@ -8,7 +8,7 @@ if(USE_AVR_LIBRARIES)
     add_avr_library(rsp STATIC
 	${LIBRSP_SRCS})
 else()
-    add_library(rsp STATIC
+    add_library(rsp SHARED
 	${LIBRSP_SRCS})
 endif()
 
@@ -34,4 +34,14 @@ endif()
 # Tests
 if(BUILD_TESTS)
     add_subdirectory(test)
+endif()
+
+# Install only when compiled with RBase
+if(INSTALL_RBASE)
+    include(GNUInstallDirs)
+
+    install(TARGETS rsp
+	    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/static)
 endif()

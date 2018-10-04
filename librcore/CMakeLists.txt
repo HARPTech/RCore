@@ -13,7 +13,7 @@ if(USE_AVR_LIBRARIES)
     add_avr_library(rcore STATIC
 	${LIBRCORE_SRCS})
 else()
-    add_library(rcore STATIC
+    add_library(rcore SHARED
 	${LIBRCORE_SRCS})
 endif()
 
@@ -31,4 +31,14 @@ target_link_libraries(rcore${LIBRARY_SUFFIX} klib${LIBRARY_SUFFIX})
 # Tests
 if(BUILD_TESTS)
     add_subdirectory(test)
+endif()
+
+# Install only when compiled with RBase
+if(INSTALL_RBASE)
+    include(GNUInstallDirs)
+
+    install(TARGETS rcore
+	    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/static)
 endif()

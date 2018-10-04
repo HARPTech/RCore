@@ -16,7 +16,6 @@ set(CMAKE_STAGING_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/stage)
 
 set(CMAKE_C_COMPILER ${UBUNTU1604}/usr/bin/aarch64-linux-gnu-gcc-5)
 set(CMAKE_CXX_COMPILER ${UBUNTU1604}/usr/bin/aarch64-linux-gnu-g++-5)
-set(CMAKE_MAKE_PROGRAM make)
 
 set(CMAKE_FIND_ROOT_PATH ${BUILDER}/usr)
 list(APPEND CMAKE_PREFIX_PATH ${BUILDER}/usr/lib/aarch64-linux-gnu/)

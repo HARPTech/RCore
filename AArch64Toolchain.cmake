@@ -27,7 +27,7 @@ SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -L ${BUILDER}/usr/lib/aarch64-linux-gnu/ -l
 if(NOT TARGET Threads::Threads)
     add_library(Threads::Threads INTERFACE IMPORTED)
 endif()
-set_property(TARGET Threads::Threads PROPERTY INTERFACE_COMPILE_OPTIONS "-pthread")
+set_property(TARGET Threads::Threads PROPERTY INTERFACE_COMPILE_OPTIONS "-lpthread")
 set_property(TARGET Threads::Threads PROPERTY INTERFACE_LINK_LIBRARIES "${CMAKE_THREAD_LIBS_INIT}")
 set(Threads_FOUND 1)
 

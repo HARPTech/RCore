@@ -244,7 +244,6 @@ rcomm_handle_complete_block(rcomm_handle_t* handle)
         handle->accept(&handle->incoming_message, handle->accept_userdata);
     }
   }
-  lrt_rbp_message_reset_data(&handle->incoming_message);
   return status;
 }
 lrt_rcore_event_t
@@ -286,10 +285,19 @@ rcomm_parse_bytes(rcomm_handle_t* handle, const uint8_t* data, size_t length)
   } /* Also handle finished blocks if there are no additional bytes. */
   if(handle->incoming_buffer_size > 0 &&
      handle->incoming_buffer_size % 8 == 0) {
+    // Try to parse the new message. This may not be possible because the
+    // message could still be in transmit and too little data has been received
+    // yet. If this does not pass, the event is not negative and will be
+    // ignored. If it passed, a new message will be started.
+
     if(status <= LRT_RCORE_OK) {
       status = rcomm_handle_complete_block(handle);
     }
-    handle->incoming_buffer_size = 0;
+    if(status == LRT_RCORE_OK) {
+      handle->incoming_buffer_size = 0;
+    } else {
+      status = LRT_RCORE_OK;
+    }
   }
   return status;
 }

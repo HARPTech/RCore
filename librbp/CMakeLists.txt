@@ -9,10 +9,10 @@ if(USE_AVR_LIBRARIES)
 else()
     add_library(rbp SHARED
 	${LIBRBP_SRCS})
+    set_property(TARGET rbp PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
 set_property(TARGET rbp PROPERTY C_STANDARD 11)
-set_property(TARGET rbp PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(rbp${LIBRARY_SUFFIX}
     PUBLIC

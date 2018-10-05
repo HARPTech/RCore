@@ -8,10 +8,10 @@ if(USE_AVR_LIBRARIES)
 else()
     add_library(rcp SHARED
 	${LIBRCP_SRCS})
+    set_property(TARGET rcp PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
 set_property(TARGET rcp PROPERTY C_STANDARD 11)
-set_property(TARGET rcp PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(rcp${LIBRARY_SUFFIX}
     PUBLIC

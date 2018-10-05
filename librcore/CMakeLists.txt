@@ -15,10 +15,10 @@ if(USE_AVR_LIBRARIES)
 else()
     add_library(rcore SHARED
 	${LIBRCORE_SRCS})
+    set_property(TARGET rcore PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
 set_property(TARGET rcore PROPERTY C_STANDARD 11)
-set_property(TARGET rcore PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(rcore${LIBRARY_SUFFIX}
     PUBLIC

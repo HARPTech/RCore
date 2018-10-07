@@ -27,7 +27,7 @@ rcomm_init(rcomm_handle_t* handle,
   handle->outgoing_buffer_size = maximum_buffer_size;
 
   handle->incoming_buffer = calloc(sizeof(uint8_t), maximum_buffer_size);
-  handle->outgoing_buffer = calloc(sizeof(uint8_t), maximum_buffer_size);
+  handle->outgoing_buffer = calloc(sizeof(uint8_t), maximum_buffer_size + 1);
 }
 
 rcomm_handle_t*
@@ -78,11 +78,17 @@ rcomm_transmit_message(rcomm_handle_t* handle, lrt_rbp_message_t* message)
   lrt_rcore_event_t status = lrt_rbp_encode_message(
     message, handle->outgoing_buffer, handle->outgoing_buffer_size);
 
+  const size_t length =
+    lrt_rbp_buffer_length_from_message_length(message->length);
+
+  // Terminate message at the end.
+  handle->outgoing_buffer[length] = 0xFF;
+
   // Transmit with the callback.
   status = handle->transmit(
     handle->outgoing_buffer,
     handle->transmit_userdata,
-    lrt_rbp_buffer_length_from_message_length(message->length));
+    lrt_rbp_buffer_length_from_message_length(message->length) + 1);
 
   assert(message->length % 7 == 0);
   assert(lrt_rbp_buffer_length_from_message_length(message->length) % 8 == 0);
@@ -282,22 +288,6 @@ rcomm_parse_bytes(rcomm_handle_t* handle, const uint8_t* data, size_t length)
     assert(handle->incoming_buffer_size < handle->maximum_incoming_buffer_size);
     assert(i < length);
     handle->incoming_buffer[handle->incoming_buffer_size++] = data[i];
-  } /* Also handle finished blocks if there are no additional bytes. */
-  if(handle->incoming_buffer_size > 0 &&
-     handle->incoming_buffer_size % 8 == 0) {
-    // Try to parse the new message. This may not be possible because the
-    // message could still be in transmit and too little data has been received
-    // yet. If this does not pass, the event is not negative and will be
-    // ignored. If it passed, a new message will be started.
-
-    if(status <= LRT_RCORE_OK) {
-      status = rcomm_handle_complete_block(handle);
-    }
-    if(status == LRT_RCORE_OK) {
-      handle->incoming_buffer_size = 0;
-    } else {
-      status = LRT_RCORE_OK;
-    }
   }
   return status;
 }

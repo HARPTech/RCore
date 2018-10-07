@@ -163,11 +163,10 @@ using MsgArray = std::array<uint8_t, 16>;
 static void
 randomlyMutateArray(MsgArray& arr, size_t times, size_t max_byte)
 {
-  std::vector<size_t> possibilities(8 * max_byte);
+  // One byte always gets sent extra to terminate packets.
+  std::vector<size_t> possibilities(8 * (max_byte - 1));
   std::iota(std::begin(possibilities), std::end(possibilities), 0);
   std::random_shuffle(std::begin(possibilities), std::end(possibilities));
-
-  REQUIRE(possibilities.size() == max_byte * 8);
 
   for(size_t i = 0; i < times; ++i) {
     size_t byte = possibilities[i] / 8;

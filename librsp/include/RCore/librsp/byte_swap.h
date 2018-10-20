@@ -51,7 +51,9 @@ __bswap_32(uint32_t x)
 }
 #endif
 
-#if BIG_ENDIAN == 1 && !defined(__AVR__)
+// TODO: Proper endianness detection!
+
+#if BIG_ENDIAN == 1 && !defined(__AVR__) && false
 #define LRT_LIBRSP_BYTESWAP16_IF_NEEDED(VALUE) VALUE = __bswap_16(VALUE)
 #define LRT_LIBRSP_BYTESWAP32_IF_NEEDED(VALUE) VALUE = __bswap_32(VALUE)
 #else

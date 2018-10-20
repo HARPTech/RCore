@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(BIG_ENDIAN) && defined(__AVR__)
+// TODO: Make detection of endianness correct!
+
+#if defined(BIG_ENDIAN) && !defined(__AVR__) && false
 #define LRT_LIBRCP_CONVERSION_IMPL(sTYPENAME, tTYPE)                           \
   tTYPE lrt_librcp_##sTYPENAME##_from_data(const uint8_t* data, size_t length) \
   {                                                                            \

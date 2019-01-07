@@ -8,7 +8,7 @@ if(USE_AVR_LIBRARIES)
     add_avr_library(rsp STATIC
 	${LIBRSP_SRCS})
 else()
-    add_library(rsp SHARED
+    add_library(rsp STATIC
 	${LIBRSP_SRCS})
     set_property(TARGET rsp PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()

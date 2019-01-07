@@ -6,7 +6,7 @@ if(USE_AVR_LIBRARIES)
     add_avr_library(rcp STATIC
 	${LIBRCP_SRCS})
 else()
-    add_library(rcp SHARED
+    add_library(rcp STATIC
 	${LIBRCP_SRCS})
     set_property(TARGET rcp PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()

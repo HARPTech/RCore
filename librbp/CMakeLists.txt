@@ -7,7 +7,7 @@ if(USE_AVR_LIBRARIES)
     add_avr_library(rbp STATIC
 	${LIBRBP_SRCS})
 else()
-    add_library(rbp STATIC
+    add_library(rbp SHARED
 	${LIBRBP_SRCS})
     set_property(TARGET rbp PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()

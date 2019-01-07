@@ -13,7 +13,7 @@ if(USE_AVR_LIBRARIES)
     add_avr_library(rcore STATIC
 	${LIBRCORE_SRCS})
 else()
-    add_library(rcore STATIC
+    add_library(rcore SHARED
 	${LIBRCORE_SRCS})
     set_property(TARGET rcore PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
